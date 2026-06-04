@@ -1,0 +1,14 @@
+services:
+  clip-forge:
+    image: ghcr.io/hackatoan/clip-forge:latest
+    container_name: clip-forge
+    restart: unless-stopped
+    ports:
+      - "3060:3001"
+    volumes:
+      - clip-forge-data:/data
+    environment:
+      - NODE_ENV=production
+
+volumes:
+  clip-forge-data:

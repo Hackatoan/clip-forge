@@ -1,0 +1,45 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Match hackatoa.com theme */
+  --bg:         #1a0f0c;
+  --bg-surface: #2a1c17;
+  --bg-surface2:#341f18;
+  --border:     #4a2e22;
+  --primary:    #ff4b3a;
+  --primary-glow:#ff8a4a;
+  --accent:     #f472b6;
+  --text:       #f5ede8;
+  --text-dim:   #c4a090;
+  --danger:     #ff4b3a;
+  --success:    #5cbf7c;
+  --timeline-h: 220px;
+  --toolbar-h:  50px;
+  --panel-w:    268px;
+}
+
+html, body, #root {
+  height: 100%; width: 100%; overflow: hidden;
+  background: var(--bg); color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 13px;
+}
+
+button {
+  cursor: pointer; border: none; border-radius: 5px;
+  font-size: 12px; font-weight: 600; padding: 6px 12px;
+  transition: background 0.15s, opacity 0.15s;
+}
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+input[type=range] { accent-color: var(--primary); }
+input[type=text], input[type=number], textarea, select {
+  background: var(--bg-surface2); border: 1px solid var(--border);
+  color: var(--text); border-radius: 5px; padding: 5px 8px;
+  font-size: 12px; width: 100%; outline: none;
+}
+input[type=text]:focus, textarea:focus, select:focus { border-color: var(--primary); }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg-surface); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }

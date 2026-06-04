@@ -1,0 +1,141 @@
+.timeline {
+  height: var(--timeline-h);
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.addRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.addLabel { color: var(--text-dim); font-size: 0.75rem; }
+
+.addBtn {
+  background: transparent;
+  border: 1px solid;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.addBtn:hover { opacity: 0.8; }
+
+.zoom { display: flex; align-items: center; gap: 4px; margin-left: auto; color: var(--text-dim); font-size: 0.75rem; }
+
+.body { display: flex; flex: 1; overflow: hidden; }
+
+.headers {
+  width: 120px;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+}
+
+.rulerSpacer { height: 22px; background: var(--bg); border-bottom: 1px solid var(--border); }
+
+.trackHeader {
+  height: 48px;
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface2);
+}
+
+.trackName { font-size: 0.7rem; font-weight: 600; color: var(--text); }
+
+.trackControls { display: flex; align-items: center; gap: 4px; }
+
+.iconBtn {
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+.iconBtn:hover { color: var(--text); }
+.muted { color: var(--danger) !important; border-color: var(--danger) !important; }
+
+.canvasArea {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  position: relative;
+}
+
+.ruler {
+  height: 22px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.tick {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  background: var(--border);
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  padding-left: 2px;
+}
+
+.playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--primary);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.track {
+  height: 48px;
+  position: relative;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface2);
+}
+
+.clip {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  border: 1px solid;
+  border-radius: 4px;
+  cursor: grab;
+  overflow: hidden;
+  min-width: 4px;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+}
+.clip:active { cursor: grabbing; }
+
+.clipLabel {
+  font-size: 0.65rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.selected { box-shadow: 0 0 0 2px var(--primary) !important; }

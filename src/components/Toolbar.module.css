@@ -1,0 +1,50 @@
+.toolbar {
+  height: var(--toolbar-h);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.brand { display: flex; align-items: center; gap: 6px; margin-right: 8px; }
+.logo { font-size: 1.2rem; }
+.name { font-weight: 700; font-size: 0.95rem; color: var(--primary); letter-spacing: 0.5px; }
+
+.transport { display: flex; gap: 4px; }
+.tBtn {
+  background: var(--bg-surface2);
+  color: var(--text);
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  border: 1px solid var(--border);
+}
+.tBtn:hover { border-color: var(--primary); }
+.active { border-color: var(--primary) !important; }
+
+.panels { display: flex; gap: 4px; margin-left: 8px; }
+.pBtn {
+  background: transparent;
+  color: var(--text-dim);
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  font-size: 0.8rem;
+}
+.pBtn:hover { color: var(--text); background: var(--bg-surface2); }
+.pActive { background: var(--bg-surface2) !important; color: var(--text) !important; border-color: var(--border) !important; }
+
+.right { margin-left: auto; }
+.exportBtn {
+  background: var(--primary);
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 5px;
+  font-weight: 700;
+}
+.exportBtn:hover:not(:disabled) { background: var(--primary-glow); }
+.exporting { color: var(--accent); font-size: 0.8rem; font-weight: 600; }
