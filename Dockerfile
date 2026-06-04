@@ -16,4 +16,4 @@ EXPOSE 3001
 ENV NODE_ENV=production
 ENV DATA_FILE=/data/features.json
 VOLUME ["/data"]
-CMD ["node", "server/index.js"]
+CMD ["node", "server/index.cjs"]
