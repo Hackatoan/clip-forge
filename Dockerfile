@@ -1,14 +1,14 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --omit=optional
+RUN npm ci
 COPY . .
 RUN npm run build
 
 FROM node:20-alpine
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --omit=dev --omit=optional
+RUN npm install --production express cors
 COPY --from=builder /app/dist ./dist
 COPY server ./server
 RUN mkdir -p /data
