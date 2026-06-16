@@ -1,16 +1,38 @@
-# React + Vite
+# Clip Forge
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A browser-based video editor that runs entirely locally — no uploads, no server, no account. Powered by FFmpeg.wasm so all processing happens in your browser.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Trim & cut** video clips directly in the browser
+- **Canvas-based editor** (Fabric.js) for overlays, text, and drawing
+- **Audio waveform** visualization via WaveSurfer.js
+- **FFmpeg.wasm** — full FFmpeg processing, zero server-side processing
+- **No uploads** — your files never leave your machine
 
-## React Compiler
+## Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React + Vite
+- [@ffmpeg/ffmpeg](https://github.com/ffmpegwasm/ffmpeg.wasm) — WebAssembly FFmpeg
+- [Fabric.js](http://fabricjs.com/) — canvas editor
+- [WaveSurfer.js](https://wavesurfer.xyz/) — audio waveform
+- Docker-ready
 
-## Expanding the ESLint configuration
+## Self-hosting
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+git clone https://github.com/Hackatoan/clip-forge
+cd clip-forge
+docker compose up --build
+```
+
+Or run locally:
+
+```bash
+npm install
+npm run dev
+```
+
+---
+
+[hackatoa.com](https://hackatoa.com) · [GitHub](https://github.com/Hackatoan) · [![Buy Me A Coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/hackatoa)
