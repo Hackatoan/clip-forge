@@ -73,8 +73,8 @@ app.patch('/api/features/:id', (req, res) => {
   res.json(f);
 });
 
-// SPA fallback
-app.get('*', (req, res) => {
+// SPA fallback (Express 5: use a catch-all middleware, not app.get('*'))
+app.use((req, res) => {
   const index = path.join(distPath, 'index.html');
   if (fs.existsSync(index)) res.sendFile(index);
   else res.send('Clip Forge API running.');
