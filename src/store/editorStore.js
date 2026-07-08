@@ -110,6 +110,17 @@ function createStore() {
       setState({ tracks: state.tracks.map(t => t.id === trackId ? { ...t, ...patch } : t) });
     },
 
+    // Reorder a track up (dir -1) or down (dir +1). Later tracks render on top.
+    moveTrack(trackId, dir) {
+      const i = state.tracks.findIndex(t => t.id === trackId);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= state.tracks.length) return;
+      snapshot(true);
+      const arr = [...state.tracks];
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      setState({ tracks: arr });
+    },
+
     // Clips
     addClip(trackId, clipData) {
       snapshot(true);
@@ -250,6 +261,32 @@ function createStore() {
         return { ...t, clips: [...t.clips, dup] };
       });
       if (selTrack) setState({ tracks, selectedClipId: newId, selectedTrackId: selTrack });
+    },
+
+    // Cross-clip crossfade: overlap this clip with the previous clip on the
+    // same track by `dur` seconds and fade it in, dissolving between the two.
+    crossfadePrev(clipId, dur = 0.5) {
+      let changed = false;
+      const tracks = state.tracks.map(track => {
+        const clip = track.clips.find(c => c.id === clipId);
+        if (!clip) return track;
+        let prev = null;
+        for (const c of track.clips) {
+          if (c.id === clipId || c.start >= clip.start) continue;
+          if (!prev || c.start > prev.start) prev = c;
+        }
+        if (!prev) return track;
+        const d = Math.min(dur, prev.duration * 0.9, clip.duration * 0.9);
+        const newStart = Math.max(prev.start + 0.05, prev.start + prev.duration - d);
+        changed = true;
+        return {
+          ...track,
+          clips: track.clips.map(c => c.id === clipId
+            ? { ...c, start: newStart, transitionIn: 'fade', transInDur: d }
+            : c),
+        };
+      });
+      if (changed) { snapshot(true); setState({ tracks }); }
     },
 
     // Playback / view

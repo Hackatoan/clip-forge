@@ -16,8 +16,11 @@ A browser-based video editor that runs entirely locally — no uploads, no serve
 - **Transform** — scale, position, rotation, flip, and fit (cover / contain / fill) on video, images, text & shapes
 - **Colour filters & presets** — brightness, contrast, saturation, blur, grayscale + one-click looks (B&W, Vintage, Warm, Cool, Vivid)
 - **Blend modes** — multiply, screen, overlay, lighten, darken, add
+- **Chroma key** — green/blue-screen removal with adjustable similarity & edge softness
+- **Timeline previews** — poster thumbnails on video/image clips, waveforms on audio clips
+- **Track reordering** — move tracks up/down to control layer order
 - **Audio fades** — per-clip fade in / fade out, volume, mute
-- **Transitions** — separate in / out: fade, zoom, slide (4 directions), rendered in preview and export
+- **Transitions** — separate in / out (fade, zoom, slide 4-dir) with adjustable durations, plus one-click **cross-clip crossfades** between adjacent clips
 - **Voiceover recording** straight from your mic
 - **Live canvas preview** with real audio playback + loop
 - **Text & shape overlays** — fonts, bold/italic, colours, alignment, background, stroke; rectangles, circles, triangles

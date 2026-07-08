@@ -168,6 +168,39 @@ export default function PropertiesPanel() {
         </div>
       )}
 
+      {/* Chroma key / green screen (video / image) */}
+      {isVisual && (
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}>Chroma key (green screen)</div>
+          <label className={styles.field}>
+            <span>Enable</span>
+            <input type="checkbox" checked={!!clip.chroma?.enabled}
+              onChange={e => upd({ chroma: { color: '#00ff00', similarity: 0.4, smoothness: 0.1, ...clip.chroma, enabled: e.target.checked } })} />
+          </label>
+          {clip.chroma?.enabled && <>
+            <label className={styles.field}>
+              <span>Key colour</span>
+              <input type="color" value={clip.chroma.color || '#00ff00'} style={{ height: 30, padding: 2, width: '100%' }}
+                onChange={e => upd({ chroma: { ...clip.chroma, color: e.target.value } })} />
+            </label>
+            <div className={styles.btnRow}>
+              <button className={styles.chip} onClick={() => upd({ chroma: { ...clip.chroma, color: '#00ff00' } })}>Green</button>
+              <button className={styles.chip} onClick={() => upd({ chroma: { ...clip.chroma, color: '#0000ff' } })}>Blue</button>
+            </div>
+            <label className={styles.field}>
+              <span>Similarity {Math.round((clip.chroma.similarity ?? 0.4) * 100)}%</span>
+              <input type="range" min="0.05" max="1" step="0.01" value={clip.chroma.similarity ?? 0.4}
+                onChange={e => upd({ chroma: { ...clip.chroma, similarity: +e.target.value } })} />
+            </label>
+            <label className={styles.field}>
+              <span>Edge softness {Math.round((clip.chroma.smoothness ?? 0.1) * 100)}%</span>
+              <input type="range" min="0" max="0.5" step="0.01" value={clip.chroma.smoothness ?? 0.1}
+                onChange={e => upd({ chroma: { ...clip.chroma, smoothness: +e.target.value } })} />
+            </label>
+          </>}
+        </div>
+      )}
+
       {/* Filters (video / image) */}
       {isVisual && (
         <div className={styles.section}>
@@ -376,12 +409,27 @@ export default function PropertiesPanel() {
           </select>
         </label>
         <label className={styles.field}>
+          <span>In duration {(clip.transInDur ?? 0.5).toFixed(2)}s</span>
+          <input type="range" min="0.1" max="3" step="0.05" value={clip.transInDur ?? 0.5}
+            onChange={e => upd({ transInDur: +e.target.value })} />
+        </label>
+        <label className={styles.field}>
           <span>Out</span>
           <select value={clip.transitionOut || clip.transition || 'none'}
             onChange={e => upd({ transitionOut: e.target.value, transition: undefined })}>
             {TRANSITIONS.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         </label>
+        <label className={styles.field}>
+          <span>Out duration {(clip.transOutDur ?? 0.5).toFixed(2)}s</span>
+          <input type="range" min="0.1" max="3" step="0.05" value={clip.transOutDur ?? 0.5}
+            onChange={e => upd({ transOutDur: +e.target.value })} />
+        </label>
+        <button className={styles.secondaryBtn} style={{ marginTop: 6 }}
+          onClick={() => store.crossfadePrev(clip.id, clip.transInDur ?? 0.5)}
+          title="Overlap with the previous clip on this track and dissolve between them">
+          ⇄ Crossfade with previous
+        </button>
       </div>
 
       <div className={styles.section}>

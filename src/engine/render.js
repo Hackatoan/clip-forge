@@ -2,8 +2,9 @@
 // Exporter so on-screen and rendered output are identical.
 import { mediaEngine } from './mediaEngine';
 import { sample } from './keyframes';
+import { chromaProcess } from './chroma';
 
-const TRANSITION_DUR = 0.5; // seconds for in/out transitions
+const DEFAULT_TRANSITION_DUR = 0.5; // seconds, overridable per clip
 
 // Per-transition contribution given a progress p (0..1, 0 = fully "out").
 function contrib(kind, p) {
@@ -24,13 +25,15 @@ function transitionState(clip, localTime) {
   const legacy = clip.transition && clip.transition !== 'none' ? clip.transition : null;
   const tin = clip.transitionIn || legacy || 'none';
   const tout = clip.transitionOut || legacy || 'none';
+  const dIn = clip.transInDur || DEFAULT_TRANSITION_DUR;
+  const dOut = clip.transOutDur || DEFAULT_TRANSITION_DUR;
   let st = { alpha: 1, scale: 1, dx: 0, dy: 0 };
-  if (tin !== 'none' && localTime < TRANSITION_DUR) {
-    const c = contrib(tin, Math.min(1, localTime / TRANSITION_DUR));
+  if (tin !== 'none' && localTime < dIn) {
+    const c = contrib(tin, Math.min(1, localTime / dIn));
     st = { alpha: st.alpha * c.alpha, scale: st.scale * c.scale, dx: st.dx + c.dx, dy: st.dy + c.dy };
   }
-  if (tout !== 'none' && localTime > clip.duration - TRANSITION_DUR) {
-    const c = contrib(tout, Math.min(1, (clip.duration - localTime) / TRANSITION_DUR));
+  if (tout !== 'none' && localTime > clip.duration - dOut) {
+    const c = contrib(tout, Math.min(1, (clip.duration - localTime) / dOut));
     st = { alpha: st.alpha * c.alpha, scale: st.scale * c.scale, dx: st.dx + c.dx, dy: st.dy + c.dy };
   }
   return st;
@@ -57,8 +60,8 @@ function filterString(clip) {
 
 // Draw a video/image element with fit + transform (keyframe-aware).
 function drawMedia(ctx, el, W, H, clip, ts, lt) {
-  const iw = el.videoWidth || el.naturalWidth || W;
-  const ih = el.videoHeight || el.naturalHeight || H;
+  const iw = el.videoWidth || el.naturalWidth || el.width || W;
+  const ih = el.videoHeight || el.naturalHeight || el.height || H;
   const fit = clip.fit || 'cover';
   let dw, dh;
   if (fit === 'fill') {
@@ -85,6 +88,14 @@ function drawMedia(ctx, el, W, H, clip, ts, lt) {
   ctx.filter = 'none';
 }
 
+// Apply chroma key if enabled, returning a processed canvas; else the element.
+function keyed(clip, el, iw, ih) {
+  if (!clip.chroma?.enabled || !iw || !ih) return el;
+  const capW = Math.min(iw, 960);
+  const capH = Math.round(capW * ih / iw);
+  return chromaProcess(clip.id, el, capW, capH, clip.chroma);
+}
+
 // Draw one full frame of the timeline at time `ph` onto ctx (W x H).
 export function renderFrame(ctx, W, H, tracks, ph) {
   ctx.clearRect(0, 0, W, H);
@@ -92,7 +103,10 @@ export function renderFrame(ctx, W, H, tracks, ph) {
   ctx.fillRect(0, 0, W, H);
 
   for (const track of tracks) {
-    for (const clip of track.clips) {
+    // Sort by start so overlapping clips composite in temporal order
+    // (a later-starting clip draws on top — needed for cross-clip fades).
+    const ordered = [...track.clips].sort((a, b) => a.start - b.start);
+    for (const clip of ordered) {
       if (ph < clip.start || ph > clip.start + clip.duration) continue;
       const lt = ph - clip.start;
       const ts = transitionState(clip, lt);
@@ -103,10 +117,10 @@ export function renderFrame(ctx, W, H, tracks, ph) {
 
       if (track.type === 'video' && clip.src) {
         const vid = mediaEngine.getVideoElement(clip.id);
-        if (vid && vid.readyState >= 2) drawMedia(ctx, vid, W, H, clip, ts, lt);
+        if (vid && vid.readyState >= 2) drawMedia(ctx, keyed(clip, vid, vid.videoWidth, vid.videoHeight), W, H, clip, ts, lt);
       } else if (track.type === 'image' && clip.src) {
         const img = mediaEngine.getImageElement(clip.id);
-        if (img && img.complete && img.naturalWidth) drawMedia(ctx, img, W, H, clip, ts, lt);
+        if (img && img.complete && img.naturalWidth) drawMedia(ctx, keyed(clip, img, img.naturalWidth, img.naturalHeight), W, H, clip, ts, lt);
       } else if (track.type === 'text') {
         ctx.font = `${clip.italic ? 'italic ' : ''}${clip.bold ? 'bold ' : ''}${clip.fontSize || 48}px ${clip.fontFamily || 'system-ui, sans-serif'}`;
         ctx.fillStyle = clip.color || '#ffffff';

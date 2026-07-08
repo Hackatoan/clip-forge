@@ -1,6 +1,7 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { useStore } from '../hooks/useStore';
 import { store } from '../store/editorStore';
+import { ensureWaveform, ensurePoster } from '../engine/mediaThumbs';
 import styles from './Timeline.module.css';
 
 const HEADER_W = 120;
@@ -9,6 +10,22 @@ export default function Timeline() {
   const { tracks, playhead, duration, zoom, selectedClipId } = useStore(s => s);
   const rulerRef = useRef(null);
   const [dragging, setDragging] = useState(null); // {clipId, mode, startX, orig...}
+
+  // Generate waveforms (audio) and poster thumbnails (video/image) once each.
+  useEffect(() => {
+    for (const track of tracks) {
+      const isAudio = track.type === 'audio' || track.type === 'voiceover';
+      const isVisual = track.type === 'video' || track.type === 'image';
+      for (const clip of track.clips) {
+        if (!clip.src) continue;
+        if (isAudio && !clip.wave) {
+          ensureWaveform(clip.src).then(url => url && store.updateClip(clip.id, { wave: url }, true));
+        } else if (isVisual && !clip.thumb) {
+          ensurePoster(clip.src, track.type === 'video').then(url => url && store.updateClip(clip.id, { thumb: url }, true));
+        }
+      }
+    }
+  }, [tracks]);
 
   const toX = t => t * zoom;
   const toT = x => x / zoom;
@@ -81,7 +98,7 @@ export default function Timeline() {
 
   const trackColors = {
     video: '#ff4b3a', audio: '#f472b6', text: '#ff8a4a',
-    shape: '#a78bfa', voiceover: '#34d399',
+    shape: '#a78bfa', voiceover: '#34d399', image: '#38bdf8',
   };
 
   const addTrack = (type) => store.addTrack(type);
@@ -108,18 +125,22 @@ export default function Timeline() {
         {/* Headers */}
         <div className={styles.headers}>
           <div className={styles.rulerSpacer} />
-          {tracks.map(track => (
+          {tracks.map((track, ti) => (
             <div key={track.id} className={styles.trackHeader}
               style={{ borderLeft: `3px solid ${trackColors[track.type] || '#888'}` }}>
               <span className={styles.trackName}>{track.name}</span>
               <div className={styles.trackControls}>
+                <button className={styles.iconBtn} disabled={ti === 0}
+                  onClick={() => store.moveTrack(track.id, -1)} title="Move up">▲</button>
+                <button className={styles.iconBtn} disabled={ti === tracks.length - 1}
+                  onClick={() => store.moveTrack(track.id, 1)} title="Move down">▼</button>
                 <button className={`${styles.iconBtn} ${track.muted ? styles.muted : ''}`}
                   onClick={() => store.updateTrack(track.id, { muted: !track.muted })}
                   title="Mute">M</button>
                 {(track.type === 'audio' || track.type === 'voiceover') && (
                   <input type="range" min="0" max="1" step="0.05" value={track.volume ?? 1}
                     onChange={e => store.updateTrack(track.id, { volume: +e.target.value })}
-                    title="Volume" style={{ width: 50 }} />
+                    title="Volume" style={{ width: 40 }} />
                 )}
                 <button className={styles.iconBtn} onClick={() => store.removeTrack(track.id)} title="Delete">✕</button>
               </div>
@@ -148,14 +169,20 @@ export default function Timeline() {
           {tracks.map(track => (
             <div key={track.id} className={styles.track}
               style={{ width: toX(duration) + 200, opacity: track.muted ? 0.4 : 1 }}>
-              {track.clips.map(clip => (
+              {track.clips.map(clip => {
+                const visual = clip.thumb
+                  ? { backgroundImage: `url(${clip.thumb})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                  : clip.wave
+                    ? { backgroundImage: `url(${clip.wave})`, backgroundSize: '100% 80%', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', backgroundColor: trackColors[track.type] + '33' }
+                    : { background: trackColors[track.type] + '33' };
+                return (
                 <div
                   key={clip.id}
                   className={`${styles.clip} ${clip.id === selectedClipId ? styles.selected : ''}`}
                   style={{
                     left: toX(clip.start),
                     width: Math.max(toX(clip.duration), 4),
-                    background: trackColors[track.type] + '33',
+                    ...visual,
                     borderColor: trackColors[track.type],
                   }}
                   onMouseDown={e => onClipMouseDown(e, clip, track.id, 'move')}
@@ -171,7 +198,8 @@ export default function Timeline() {
                   <div className={styles.trimHandle} data-side="r"
                     onMouseDown={e => onClipMouseDown(e, clip, track.id, 'trim-right')} />
                 </div>
-              ))}
+                );
+              })}
             </div>
           ))}
         </div>
