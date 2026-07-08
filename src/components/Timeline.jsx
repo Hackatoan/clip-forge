@@ -4,11 +4,10 @@ import { store } from '../store/editorStore';
 import { ensureWaveform, ensurePoster } from '../engine/mediaThumbs';
 import styles from './Timeline.module.css';
 
-const HEADER_W = 120;
-
 export default function Timeline() {
-  const { tracks, playhead, duration, zoom, selectedClipId } = useStore(s => s);
+  const { tracks, playhead, duration, zoom, selectedClipId, snap: snapOn } = useStore(s => s);
   const rulerRef = useRef(null);
+  const areaRef = useRef(null);
   const [dragging, setDragging] = useState(null); // {clipId, mode, startX, orig...}
 
   // Generate waveforms (audio) and poster thumbnails (video/image) once each.
@@ -39,7 +38,9 @@ export default function Timeline() {
     }
     return pts;
   };
-  const snap = (t, excludeId) => {
+  // Snap `t` to nearby edges unless snapping is off or Alt is held.
+  const snap = (t, excludeId, bypass) => {
+    if (!snapOn || bypass) return t;
     const threshold = 8 / zoom; // ~8px
     let best = t, bestD = threshold;
     for (const p of snapPoints(excludeId)) {
@@ -49,11 +50,23 @@ export default function Timeline() {
     return best;
   };
 
-  // Ruler click → set playhead
-  const onRulerClick = e => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    store.setPlayhead(toT(x));
+  const rulerT = clientX => {
+    const rect = rulerRef.current.getBoundingClientRect();
+    return Math.max(0, Math.min(duration, toT(clientX - rect.left)));
+  };
+
+  // Scrub: mousedown on ruler / playhead → drag to move the playhead.
+  const onScrubStart = e => {
+    e.preventDefault();
+    store.setPlaying(false);
+    store.setPlayhead(rulerT(e.clientX));
+    setDragging({ mode: 'scrub' });
+  };
+
+  // Zoom so the whole timeline fits the visible area.
+  const zoomToFit = () => {
+    const w = areaRef.current?.clientWidth || 600;
+    store.setZoom((w - 40) / Math.max(1, duration));
   };
 
   // Clip interactions
@@ -72,13 +85,15 @@ export default function Timeline() {
 
   const onMouseMove = useCallback(e => {
     if (!dragging) return;
+    if (dragging.mode === 'scrub') { store.setPlayhead(rulerT(e.clientX)); return; }
     const dx = toT(e.clientX - dragging.startX);
     const { clipId, mode, origStart, origDuration, origOffset } = dragging;
+    const bypass = e.altKey;
     if (mode === 'move') {
-      const newStart = Math.max(0, snap(origStart + dx, clipId));
+      const newStart = Math.max(0, snap(origStart + dx, clipId, bypass));
       store.updateClip(clipId, { start: newStart });
     } else if (mode === 'trim-left') {
-      let newStart = Math.max(0, snap(origStart + dx, clipId));
+      let newStart = Math.max(0, snap(origStart + dx, clipId, bypass));
       let delta = newStart - origStart;
       // Don't let duration go below 0.2s.
       if (origDuration - delta < 0.2) { delta = origDuration - 0.2; newStart = origStart + delta; }
@@ -88,11 +103,11 @@ export default function Timeline() {
         offset: Math.max(0, origOffset + delta),
       });
     } else if (mode === 'trim-right') {
-      const end = snap(origStart + origDuration + dx, clipId);
+      const end = snap(origStart + origDuration + dx, clipId, bypass);
       const newDur = Math.max(0.2, end - origStart);
       store.updateClip(clipId, { duration: newDur });
     }
-  }, [dragging, zoom, tracks, playhead]);
+  }, [dragging, zoom, tracks, playhead, snapOn, duration]);
 
   const onMouseUp = () => setDragging(null);
 
@@ -114,6 +129,10 @@ export default function Timeline() {
             + {t}
           </button>
         ))}
+        <button className={`${styles.addBtn} ${snapOn ? styles.snapOn : ''}`}
+          onClick={() => store.setSnap(!snapOn)} title="Toggle snapping (hold Alt to bypass)"
+          style={{ marginLeft: 'auto' }}>🧲 Snap</button>
+        <button className={styles.addBtn} onClick={zoomToFit} title="Zoom to fit">⤢ Fit</button>
         <div className={styles.zoom}>
           <span>Zoom</span>
           <input type="range" min="20" max="300" value={zoom}
@@ -149,11 +168,11 @@ export default function Timeline() {
         </div>
 
         {/* Scrollable canvas area */}
-        <div className={styles.canvasArea}>
+        <div className={styles.canvasArea} ref={areaRef}>
           {/* Ruler */}
           <div className={styles.ruler} ref={rulerRef}
             style={{ width: toX(duration) + 200 }}
-            onClick={onRulerClick}>
+            onMouseDown={onScrubStart}>
             {Array.from({ length: Math.ceil(duration) + 1 }, (_, i) => (
               <div key={i} className={styles.tick} style={{ left: toX(i) }}>
                 <span>{fmt(i)}</span>
@@ -161,13 +180,15 @@ export default function Timeline() {
             ))}
           </div>
 
-          {/* Playhead */}
-          <div className={styles.playhead}
-            style={{ left: HEADER_W + toX(playhead) }} />
+          {/* Playhead (offset parent is canvasArea → no header offset) */}
+          <div className={styles.playhead} style={{ left: toX(playhead) }}>
+            <div className={styles.playheadHandle} onMouseDown={onScrubStart} />
+          </div>
 
           {/* Tracks */}
           {tracks.map(track => (
             <div key={track.id} className={styles.track}
+              onMouseDown={() => store.select(null, null)}
               style={{ width: toX(duration) + 200, opacity: track.muted ? 0.4 : 1 }}>
               {track.clips.map(clip => {
                 const visual = clip.thumb

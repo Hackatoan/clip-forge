@@ -18,6 +18,7 @@ function createStore() {
     duration: 60,        // total timeline seconds
     playing: false,
     loop: false,
+    snap: true,          // edge snapping while dragging clips
     zoom: 60,            // pixels per second
     selectedClipId: null,
     selectedTrackId: null,
@@ -293,6 +294,7 @@ function createStore() {
     setPlayhead(t) { setState({ playhead: Math.max(0, Math.min(t, state.duration)) }); },
     setPlaying(v) { setState({ playing: v }); },
     setLoop(v) { setState({ loop: v }); },
+    setSnap(v) { setState({ snap: v }); },
     setZoom(z) { setState({ zoom: Math.max(20, Math.min(300, z)) }); },
     setDuration(d) { setState({ duration: d }); },
     setAspect(key) {

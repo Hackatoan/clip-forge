@@ -6,6 +6,7 @@ import PropertiesPanel from './components/PropertiesPanel';
 import MediaPanel from './components/MediaPanel';
 import FeatureRequest from './components/FeatureRequest';
 import ExportModal from './components/ExportModal';
+import ShortcutsModal from './components/ShortcutsModal';
 import { store } from './store/editorStore';
 import { loadFFmpeg, isCrossOriginIsolated } from './engine/ffmpeg';
 import styles from './App.module.css';
@@ -13,6 +14,7 @@ import styles from './App.module.css';
 export default function App() {
   const [activePanel, setActivePanel] = useState('media'); // media | properties | features
   const [showExport, setShowExport] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   // Preload ffmpeg.wasm in the background (only useful if cross-origin isolated).
   useEffect(() => {
@@ -55,6 +57,8 @@ export default function App() {
         e.preventDefault(); store.setPlayhead(0);
       } else if (e.key === 'End') {
         e.preventDefault(); store.setPlayhead(s.duration);
+      } else if (e.key === '?') {
+        e.preventDefault(); setShowHelp(v => !v);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -63,7 +67,7 @@ export default function App() {
 
   return (
     <div className={styles.app}>
-      <Toolbar onPanel={setActivePanel} activePanel={activePanel} onExport={() => setShowExport(true)} />
+      <Toolbar onPanel={setActivePanel} activePanel={activePanel} onExport={() => setShowExport(true)} onHelp={() => setShowHelp(true)} />
       <div className={styles.main}>
         <div className={styles.sidebar}>
           {activePanel === 'media'      && <MediaPanel />}
@@ -76,6 +80,7 @@ export default function App() {
         </div>
       </div>
       {showExport && <ExportModal onClose={() => setShowExport(false)} />}
+      {showHelp && <ShortcutsModal onClose={() => setShowHelp(false)} />}
     </div>
   );
 }

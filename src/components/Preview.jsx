@@ -28,7 +28,7 @@ export default function Preview() {
   useEffect(() => { mediaEngine.sync(tracks); }, [tracks]);
 
   // Redraw when the canvas is resized (aspect-ratio change clears it).
-  useEffect(() => { if (!playing) draw(playhead); });
+  useEffect(() => { if (!playing) draw(playhead); }, [canvasW, canvasH]);
 
   // Playback loop.
   useEffect(() => {
@@ -85,10 +85,20 @@ export default function Preview() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playhead, tracks]);
 
+  const empty = tracks.length === 0;
+
   return (
     <div className={styles.preview}>
-      <canvas ref={canvasRef} width={canvasW} height={canvasH} className={styles.canvas}
-        style={{ aspectRatio: `${canvasW} / ${canvasH}` }} />
+      <div className={styles.stage} style={{ aspectRatio: `${canvasW} / ${canvasH}` }}>
+        <canvas ref={canvasRef} width={canvasW} height={canvasH} className={styles.canvas} />
+        {empty && (
+          <div className={styles.emptyState}>
+            <div className={styles.emptyIcon}>🎬</div>
+            <div className={styles.emptyTitle}>Start your project</div>
+            <div className={styles.emptyHint}>Add video, audio, or images from the Media panel — or drop in text and shapes.</div>
+          </div>
+        )}
+      </div>
       <div className={styles.timecode}>{fmt(playhead)} / {fmt(duration)}</div>
     </div>
   );
