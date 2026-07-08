@@ -6,15 +6,18 @@ A browser-based video editor that runs entirely locally — no uploads, no serve
 
 - **Multi-track timeline** — video, audio, image, text, shape, and voiceover tracks
 - **Trim, move, split & snap** — drag clips, trim edges, split at the playhead, edges snap to neighbours
+- **Keyframe animation** — animate opacity, scale, position, rotation & volume over time with eased interpolation; keyframe markers on the timeline
 - **Undo / redo** with full history
 - **Copy · paste · duplicate** clips
+- **Save / load projects** — self-contained `.clipforge.json` files with media embedded; survives reloads and is shareable as a single file
 - **Media import** — video, audio, and images
 - **Aspect-ratio presets** — 16:9, 9:16, 1:1, 4:3, 21:9 (canvas resizes live)
 - **Clip playback speed** — 0.25×–4× slow-mo / fast-motion
-- **Transform** — scale, position, rotation, flip, and fit (cover / contain / fill) on video & images
-- **Colour filters** — brightness, contrast, saturation, blur, grayscale
+- **Transform** — scale, position, rotation, flip, and fit (cover / contain / fill) on video, images, text & shapes
+- **Colour filters & presets** — brightness, contrast, saturation, blur, grayscale + one-click looks (B&W, Vintage, Warm, Cool, Vivid)
+- **Blend modes** — multiply, screen, overlay, lighten, darken, add
 - **Audio fades** — per-clip fade in / fade out, volume, mute
-- **Transitions** — fade, zoom, slide, wipe (rendered in preview and export)
+- **Transitions** — separate in / out: fade, zoom, slide (4 directions), rendered in preview and export
 - **Voiceover recording** straight from your mic
 - **Live canvas preview** with real audio playback + loop
 - **Text & shape overlays** — fonts, bold/italic, colours, alignment, background, stroke; rectangles, circles, triangles

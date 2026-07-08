@@ -1,11 +1,41 @@
 import { useStore } from '../hooks/useStore';
 import { store } from '../store/editorStore';
+import { hasKeyframes } from '../engine/keyframes';
 import styles from './Panel.module.css';
 
-const TRANSITIONS = ['none', 'fade', 'slide-left', 'slide-right', 'zoom-in', 'zoom-out', 'wipe'];
+const TRANSITIONS = ['none', 'fade', 'slide-left', 'slide-right', 'slide-up', 'slide-down', 'zoom-in', 'zoom-out'];
+const BLENDS = ['normal', 'multiply', 'screen', 'overlay', 'lighten', 'darken', 'add'];
+const FILTER_PRESETS = {
+  None:    { brightness: 1, contrast: 1, saturate: 1, blur: 0, grayscale: 0, sepia: 0, hue: 0 },
+  'B&W':   { brightness: 1, contrast: 1.05, saturate: 1, blur: 0, grayscale: 1, sepia: 0, hue: 0 },
+  Vintage: { brightness: 1.05, contrast: 1.1, saturate: 0.8, blur: 0, grayscale: 0, sepia: 0.4, hue: 0 },
+  Warm:    { brightness: 1.05, contrast: 1, saturate: 1.2, blur: 0, grayscale: 0, sepia: 0.15, hue: 0 },
+  Cool:    { brightness: 0.98, contrast: 1.05, saturate: 1.1, blur: 0, grayscale: 0, sepia: 0, hue: 200 },
+  Vivid:   { brightness: 1.02, contrast: 1.15, saturate: 1.5, blur: 0, grayscale: 0, sepia: 0, hue: 0 },
+};
+
+// A row in the keyframe section: add @ playhead / clear.
+function KfRow({ clip, prop, label, localTime, inRange }) {
+  const on = hasKeyframes(clip, prop);
+  const count = on ? clip.keyframes[prop].length : 0;
+  return (
+    <div className={styles.kfRow}>
+      <span className={`${styles.kfName} ${on ? styles.kfOn : ''}`}>◆ {label}{count ? ` (${count})` : ''}</span>
+      <button className={styles.chip} disabled={!inRange}
+        title={inRange ? 'Add keyframe at playhead' : 'Move playhead over this clip'}
+        onClick={() => store.addKeyframe(clip.id, prop, localTime, clip[prop] ?? defaultFor(prop))}>+@</button>
+      <button className={styles.chip} disabled={!on}
+        onClick={() => store.clearKeyframes(clip.id, prop)}>✕</button>
+    </div>
+  );
+}
+
+function defaultFor(prop) {
+  return ({ opacity: 1, scale: 1, x: 0.5, y: 0.5, rotation: 0, volume: 1 })[prop] ?? 0;
+}
 
 export default function PropertiesPanel() {
-  const { tracks, selectedClipId, selectedTrackId } = useStore(s => s);
+  const { tracks, selectedClipId, selectedTrackId, playhead } = useStore(s => s);
 
   const track = tracks.find(t => t.id === selectedTrackId);
   const clip = track?.clips.find(c => c.id === selectedClipId);
@@ -22,6 +52,8 @@ export default function PropertiesPanel() {
   const isVisual = track.type === 'video' || track.type === 'image';
   const isAudio = track.type === 'audio' || track.type === 'voiceover';
   const hasSpeed = track.type === 'video' || isAudio;
+  const localTime = +(playhead - clip.start).toFixed(3);
+  const inRange = localTime >= 0 && localTime <= clip.duration;
 
   return (
     <div className={styles.panel}>
@@ -110,10 +142,41 @@ export default function PropertiesPanel() {
         </div>
       )}
 
+      {/* Keyframe animation */}
+      {(isVisual || track.type === 'text' || track.type === 'shape' || isAudio) && (
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}>Animation ◆</div>
+          <p className={styles.hint}>Set a value, move the playhead, then + to keyframe.</p>
+          {(isVisual || track.type === 'text' || track.type === 'shape') && <>
+            <KfRow clip={clip} prop="opacity" label="Opacity" localTime={localTime} inRange={inRange} />
+            <KfRow clip={clip} prop="scale" label="Scale" localTime={localTime} inRange={inRange} />
+            <KfRow clip={clip} prop="x" label="Position X" localTime={localTime} inRange={inRange} />
+            <KfRow clip={clip} prop="y" label="Position Y" localTime={localTime} inRange={inRange} />
+            <KfRow clip={clip} prop="rotation" label="Rotation" localTime={localTime} inRange={inRange} />
+          </>}
+          {isAudio && <KfRow clip={clip} prop="volume" label="Volume" localTime={localTime} inRange={inRange} />}
+        </div>
+      )}
+
+      {/* Blend mode (video / image) */}
+      {isVisual && (
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}>Blend mode</div>
+          <select value={clip.blend || 'normal'} onChange={e => upd({ blend: e.target.value })}>
+            {BLENDS.map(b => <option key={b} value={b}>{b}</option>)}
+          </select>
+        </div>
+      )}
+
       {/* Filters (video / image) */}
       {isVisual && (
         <div className={styles.section}>
           <div className={styles.sectionTitle}>Filters</div>
+          <div className={styles.presetGrid}>
+            {Object.entries(FILTER_PRESETS).map(([name, p]) => (
+              <button key={name} className={styles.chip} onClick={() => upd(p)}>{name}</button>
+            ))}
+          </div>
           <label className={styles.field}>
             <span>Brightness {Math.round((clip.brightness ?? 1) * 100)}%</span>
             <input type="range" min="0" max="2" step="0.01" value={clip.brightness ?? 1}
@@ -233,6 +296,21 @@ export default function PropertiesPanel() {
             <input type="range" min="0" max="1" step="0.01" value={clip.y ?? 0.8}
               onChange={e => upd({ y: +e.target.value })} />
           </label>
+          <label className={styles.field}>
+            <span>Opacity {Math.round((clip.opacity ?? 1) * 100)}%</span>
+            <input type="range" min="0" max="1" step="0.01" value={clip.opacity ?? 1}
+              onChange={e => upd({ opacity: +e.target.value })} />
+          </label>
+          <label className={styles.field}>
+            <span>Scale {Math.round((clip.scale ?? 1) * 100)}%</span>
+            <input type="range" min="0.1" max="3" step="0.01" value={clip.scale ?? 1}
+              onChange={e => upd({ scale: +e.target.value })} />
+          </label>
+          <label className={styles.field}>
+            <span>Rotation {clip.rotation ?? 0}°</span>
+            <input type="range" min="-180" max="180" step="1" value={clip.rotation ?? 0}
+              onChange={e => upd({ rotation: +e.target.value })} />
+          </label>
         </div>
       )}
 
@@ -274,15 +352,36 @@ export default function PropertiesPanel() {
             <span>Height (0–1)</span>
             <input type="range" min="0.01" max="1" step="0.01" value={clip.h ?? 0.1} onChange={e => upd({ h: +e.target.value })} />
           </label>
+          <label className={styles.field}>
+            <span>Scale {Math.round((clip.scale ?? 1) * 100)}%</span>
+            <input type="range" min="0.1" max="3" step="0.01" value={clip.scale ?? 1}
+              onChange={e => upd({ scale: +e.target.value })} />
+          </label>
+          <label className={styles.field}>
+            <span>Rotation {clip.rotation ?? 0}°</span>
+            <input type="range" min="-180" max="180" step="1" value={clip.rotation ?? 0}
+              onChange={e => upd({ rotation: +e.target.value })} />
+          </label>
         </div>
       )}
 
-      {/* Transition */}
+      {/* Transitions */}
       <div className={styles.section}>
-        <div className={styles.sectionTitle}>Transition (in / out)</div>
-        <select value={clip.transition || 'none'} onChange={e => upd({ transition: e.target.value })}>
-          {TRANSITIONS.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
+        <div className={styles.sectionTitle}>Transitions</div>
+        <label className={styles.field}>
+          <span>In</span>
+          <select value={clip.transitionIn || clip.transition || 'none'}
+            onChange={e => upd({ transitionIn: e.target.value, transition: undefined })}>
+            {TRANSITIONS.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </label>
+        <label className={styles.field}>
+          <span>Out</span>
+          <select value={clip.transitionOut || clip.transition || 'none'}
+            onChange={e => upd({ transitionOut: e.target.value, transition: undefined })}>
+            {TRANSITIONS.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </label>
       </div>
 
       <div className={styles.section}>

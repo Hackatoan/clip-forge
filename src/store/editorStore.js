@@ -187,6 +187,57 @@ function createStore() {
       });
     },
 
+    // Keyframes ----------------------------------------------------------
+    // Add/replace a keyframe for `prop` at clip-local time `t` with value `v`.
+    addKeyframe(clipId, prop, t, v) {
+      snapshot(true);
+      setState({
+        tracks: state.tracks.map(track => ({
+          ...track,
+          clips: track.clips.map(c => {
+            if (c.id !== clipId) return c;
+            const kf = { ...(c.keyframes || {}) };
+            const arr = (kf[prop] || []).filter(k => Math.abs(k.t - t) > 0.001);
+            arr.push({ t, v, ease: 'in-out' });
+            arr.sort((a, b) => a.t - b.t);
+            kf[prop] = arr;
+            return { ...c, keyframes: kf };
+          }),
+        })),
+      });
+    },
+
+    removeKeyframe(clipId, prop, t) {
+      snapshot(true);
+      setState({
+        tracks: state.tracks.map(track => ({
+          ...track,
+          clips: track.clips.map(c => {
+            if (c.id !== clipId || !c.keyframes?.[prop]) return c;
+            const kf = { ...c.keyframes };
+            kf[prop] = kf[prop].filter(k => Math.abs(k.t - t) > 0.001);
+            if (!kf[prop].length) delete kf[prop];
+            return { ...c, keyframes: kf };
+          }),
+        })),
+      });
+    },
+
+    clearKeyframes(clipId, prop) {
+      snapshot(true);
+      setState({
+        tracks: state.tracks.map(track => ({
+          ...track,
+          clips: track.clips.map(c => {
+            if (c.id !== clipId || !c.keyframes?.[prop]) return c;
+            const kf = { ...c.keyframes };
+            delete kf[prop];
+            return { ...c, keyframes: kf };
+          }),
+        })),
+      });
+    },
+
     duplicateClip(clipId) {
       snapshot(true);
       const newId = uuidv4();
@@ -210,6 +261,22 @@ function createStore() {
     setAspect(key) {
       const a = ASPECTS[key]; if (!a) return;
       setState({ aspect: key, canvasW: a.w, canvasH: a.h });
+    },
+
+    // Replace the whole project (from a loaded .clipforge file). Clears history.
+    loadProject(proj) {
+      past.length = 0; future.length = 0;
+      state.canUndo = false; state.canRedo = false;
+      setState({
+        tracks: proj.tracks || [],
+        aspect: proj.aspect || '16:9',
+        canvasW: proj.canvasW || 1280,
+        canvasH: proj.canvasH || 720,
+        playhead: 0,
+        playing: false,
+        selectedClipId: null,
+        selectedTrackId: null,
+      });
     },
     select(trackId, clipId) { setState({ selectedTrackId: trackId, selectedClipId: clipId }); },
     setFFmpegReady(v) { setState({ ffmpegReady: v }); },

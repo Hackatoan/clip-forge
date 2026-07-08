@@ -1,13 +1,44 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { store } from '../store/editorStore';
 import { useStore } from '../hooks/useStore';
+import { serializeProject, downloadProject, parseProject } from '../engine/project';
 import styles from './Panel.module.css';
 
 export default function MediaPanel() {
   const fileRef = useRef(null);
+  const projRef = useRef(null);
   const micRef = useRef(null);
   const recordRef = useRef(null);
   const tracks = useStore(s => s.tracks);
+  const [projMsg, setProjMsg] = useState('');
+
+  const saveProject = async () => {
+    setProjMsg('Saving…');
+    try {
+      const json = await serializeProject(store.getState(), p => setProjMsg(`Encoding media ${p}%`));
+      downloadProject(json);
+      setProjMsg('✅ Saved');
+    } catch (e) {
+      setProjMsg('⚠ ' + (e.message || e));
+    }
+    setTimeout(() => setProjMsg(''), 3000);
+  };
+
+  const loadProject = (file) => {
+    if (!file) return;
+    setProjMsg('Loading…');
+    const fr = new FileReader();
+    fr.onload = () => {
+      try {
+        store.loadProject(parseProject(fr.result));
+        setProjMsg('✅ Loaded');
+      } catch (e) {
+        setProjMsg('⚠ ' + (e.message || e));
+      }
+      setTimeout(() => setProjMsg(''), 3000);
+    };
+    fr.readAsText(file);
+  };
 
   const addMedia = (files) => {
     Array.from(files).forEach(file => {
@@ -87,6 +118,17 @@ export default function MediaPanel() {
           <button className={styles.elemBtn} onClick={() => addShape('circle')}>◯ Circle</button>
           <button ref={micRef} className={styles.elemBtn} onClick={startRecording}>🎙 Voiceover</button>
         </div>
+      </div>
+
+      <div className={styles.section}>
+        <div className={styles.sectionTitle}>Project</div>
+        <input ref={projRef} type="file" accept=".json,application/json" style={{ display: 'none' }}
+          onChange={e => { loadProject(e.target.files[0]); e.target.value = ''; }} />
+        <div className={styles.grid2}>
+          <button className={styles.elemBtn} onClick={saveProject}>💾 Save</button>
+          <button className={styles.elemBtn} onClick={() => projRef.current.click()}>📁 Load</button>
+        </div>
+        {projMsg && <p className={styles.hint} style={{ marginTop: 6 }}>{projMsg}</p>}
       </div>
 
       <div className={styles.section}>

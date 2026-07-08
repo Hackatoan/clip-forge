@@ -165,6 +165,9 @@ export default function Timeline() {
                   <div className={styles.trimHandle} data-side="l"
                     onMouseDown={e => onClipMouseDown(e, clip, track.id, 'trim-left')} />
                   <span className={styles.clipLabel}>{clip.name || clip.text || track.type}</span>
+                  {clip.keyframes && Object.values(clip.keyframes).flat().map((k, i) => (
+                    <div key={i} className={styles.kfMark} style={{ left: toX(k.t) }} />
+                  ))}
                   <div className={styles.trimHandle} data-side="r"
                     onMouseDown={e => onClipMouseDown(e, clip, track.id, 'trim-right')} />
                 </div>

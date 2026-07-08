@@ -1,3 +1,5 @@
+import { sample as sampleKf } from './keyframes';
+
 // Shared media + audio engine.
 // Manages one HTMLMediaElement per media clip (video/audio/voiceover),
 // routes all audio through a Web Audio graph so we get real preview sound
@@ -98,7 +100,8 @@ class MediaEngine {
 
   _effectiveGain(clip, track, playhead) {
     if (track.muted || clip.muted) return 0;
-    const cv = clip.volume ?? 1;
+    const tClipRaw = playhead - clip.start;
+    const cv = sampleKf(clip, 'volume', tClipRaw, clip.volume ?? 1);
     const tv = track.volume ?? 1;
     let g = cv * tv;
     // Audio fade in/out envelope.
