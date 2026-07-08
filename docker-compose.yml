@@ -1,5 +1,6 @@
 services:
   clip-forge:
+    build: .
     image: clip-forge:latest
     container_name: clip-forge
     restart: unless-stopped
