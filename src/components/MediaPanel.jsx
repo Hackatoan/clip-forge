@@ -14,17 +14,22 @@ export default function MediaPanel() {
       const src = URL.createObjectURL(file);
       const isVideo = file.type.startsWith('video');
       const isAudio = file.type.startsWith('audio');
-      const type = isVideo ? 'video' : isAudio ? 'audio' : null;
+      const isImage = file.type.startsWith('image');
+      const type = isVideo ? 'video' : isAudio ? 'audio' : isImage ? 'image' : null;
       if (!type) return;
       const trackId = store.addTrack(type);
-      store.addClip(trackId, { src, name: file.name, duration: 10 });
+      if (isImage) {
+        store.addClip(trackId, { src, name: file.name, duration: 5, fit: 'cover' });
+        return;
+      }
+      store.addClip(trackId, { src, name: file.name, duration: 10, ...(isVideo ? { fit: 'cover' } : {}) });
       // Get actual duration
       const el = document.createElement(isVideo ? 'video' : 'audio');
       el.src = src;
       el.onloadedmetadata = () => {
         store.updateClip(
-          store.getState().tracks.find(t=>t.id===trackId)?.clips.slice(-1)[0]?.id,
-          { duration: el.duration }
+          store.getState().tracks.find(t => t.id === trackId)?.clips.slice(-1)[0]?.id,
+          { duration: el.duration }, true
         );
       };
     });
@@ -67,10 +72,10 @@ export default function MediaPanel() {
     <div className={styles.panel}>
       <div className={styles.section}>
         <div className={styles.sectionTitle}>Import Media</div>
-        <input ref={fileRef} type="file" multiple accept="video/*,audio/*" style={{ display: 'none' }}
+        <input ref={fileRef} type="file" multiple accept="video/*,audio/*,image/*" style={{ display: 'none' }}
           onChange={e => addMedia(e.target.files)} />
         <button className={styles.primaryBtn} onClick={() => fileRef.current.click()}>
-          📂 Add Video / Audio
+          📂 Add Video / Audio / Image
         </button>
       </div>
 

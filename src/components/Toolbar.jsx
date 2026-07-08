@@ -3,16 +3,16 @@ import { store } from '../store/editorStore';
 import styles from './Toolbar.module.css';
 
 export default function Toolbar({ onPanel, activePanel, onExport }) {
-  const { playing, ffmpegReady } = useStore(s => s);
+  const { playing, ffmpegReady, loop, canUndo, canRedo, aspect } = useStore(s => s);
 
-  const play  = () => store.setPlaying(true);
+  const play = () => store.setPlaying(true);
   const pause = () => store.setPlaying(false);
-  const stop  = () => { store.setPlaying(false); store.setPlayhead(0); };
+  const stop = () => { store.setPlaying(false); store.setPlayhead(0); };
 
   const panels = [
-    { id: 'media',      label: '📁 Media' },
+    { id: 'media', label: '📁 Media' },
     { id: 'properties', label: '⚙️ Properties' },
-    { id: 'features',   label: '✨ Requests' },
+    { id: 'features', label: '✨ Requests' },
   ];
 
   return (
@@ -23,11 +23,15 @@ export default function Toolbar({ onPanel, activePanel, onExport }) {
       </div>
 
       <div className={styles.transport}>
+        <button className={styles.tBtn} onClick={() => store.undo()} disabled={!canUndo} title="Undo (Ctrl+Z)">↶</button>
+        <button className={styles.tBtn} onClick={() => store.redo()} disabled={!canRedo} title="Redo (Ctrl+Y)">↷</button>
+        <span className={styles.sep} />
         <button className={styles.tBtn} onClick={stop} title="Stop">⏹</button>
         {playing
-          ? <button className={`${styles.tBtn} ${styles.active}`} onClick={pause} title="Pause">⏸</button>
-          : <button className={`${styles.tBtn} ${styles.active}`} onClick={play} title="Play">▶️</button>
+          ? <button className={`${styles.tBtn} ${styles.active}`} onClick={pause} title="Pause (Space)">⏸</button>
+          : <button className={`${styles.tBtn} ${styles.active}`} onClick={play} title="Play (Space)">▶️</button>
         }
+        <button className={`${styles.tBtn} ${loop ? styles.active : ''}`} onClick={() => store.setLoop(!loop)} title="Loop">🔁</button>
       </div>
 
       <div className={styles.panels}>
@@ -41,6 +45,10 @@ export default function Toolbar({ onPanel, activePanel, onExport }) {
       </div>
 
       <div className={styles.right}>
+        <select className={styles.aspect} value={aspect} title="Aspect ratio"
+          onChange={e => store.setAspect(e.target.value)}>
+          {Object.keys(store.ASPECTS).map(a => <option key={a} value={a}>{a}</option>)}
+        </select>
         <button
           className={styles.exportBtn}
           disabled={!ffmpegReady}

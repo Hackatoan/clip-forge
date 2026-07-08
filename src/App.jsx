@@ -24,18 +24,37 @@ export default function App() {
     }
   }, []);
 
-  // Keyboard shortcuts: space = play/pause, delete = remove clip.
+  // Keyboard shortcuts.
   useEffect(() => {
     const onKey = (e) => {
       const tag = e.target.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-      if (e.code === 'Space') {
+      const s = store.getState();
+      const mod = e.ctrlKey || e.metaKey;
+
+      if (mod && e.key.toLowerCase() === 'z') {
         e.preventDefault();
-        const s = store.getState();
-        store.setPlaying(!s.playing);
+        if (e.shiftKey) store.redo(); else store.undo();
+      } else if (mod && e.key.toLowerCase() === 'y') {
+        e.preventDefault(); store.redo();
+      } else if (mod && e.key.toLowerCase() === 'c') {
+        if (s.selectedClipId) { e.preventDefault(); store.copyClip(s.selectedClipId); }
+      } else if (mod && e.key.toLowerCase() === 'v') {
+        e.preventDefault(); store.pasteClip();
+      } else if (mod && e.key.toLowerCase() === 'd') {
+        if (s.selectedClipId) { e.preventDefault(); store.duplicateClip(s.selectedClipId); }
+      } else if (e.code === 'Space') {
+        e.preventDefault(); store.setPlaying(!s.playing);
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        const s = store.getState();
         if (s.selectedClipId) { e.preventDefault(); store.removeClip(s.selectedClipId); }
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault(); store.setPlayhead(s.playhead - (e.shiftKey ? 1 : 0.1));
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault(); store.setPlayhead(s.playhead + (e.shiftKey ? 1 : 0.1));
+      } else if (e.key === 'Home') {
+        e.preventDefault(); store.setPlayhead(0);
+      } else if (e.key === 'End') {
+        e.preventDefault(); store.setPlayhead(s.duration);
       }
     };
     window.addEventListener('keydown', onKey);

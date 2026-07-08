@@ -2,13 +2,13 @@ import { useStore } from '../hooks/useStore';
 import { store } from '../store/editorStore';
 import styles from './Panel.module.css';
 
-const TRANSITIONS = ['none','fade','slide-left','slide-right','zoom-in','zoom-out','wipe'];
+const TRANSITIONS = ['none', 'fade', 'slide-left', 'slide-right', 'zoom-in', 'zoom-out', 'wipe'];
 
 export default function PropertiesPanel() {
   const { tracks, selectedClipId, selectedTrackId } = useStore(s => s);
 
   const track = tracks.find(t => t.id === selectedTrackId);
-  const clip  = track?.clips.find(c => c.id === selectedClipId);
+  const clip = track?.clips.find(c => c.id === selectedClipId);
 
   if (!clip) return (
     <div className={styles.panel}>
@@ -19,6 +19,9 @@ export default function PropertiesPanel() {
   );
 
   const upd = patch => store.updateClip(clip.id, patch);
+  const isVisual = track.type === 'video' || track.type === 'image';
+  const isAudio = track.type === 'audio' || track.type === 'voiceover';
+  const hasSpeed = track.type === 'video' || isAudio;
 
   return (
     <div className={styles.panel}>
@@ -38,16 +41,145 @@ export default function PropertiesPanel() {
           <input type="number" step="0.1" value={clip.duration.toFixed(2)}
             onChange={e => upd({ duration: +e.target.value })} />
         </label>
+        <label className={styles.field}>
+          <span>Lock</span>
+          <input type="checkbox" checked={!!clip.locked} onChange={e => upd({ locked: e.target.checked })} />
+        </label>
       </div>
 
+      {/* Speed */}
+      {hasSpeed && (
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}>Speed</div>
+          <label className={styles.field}>
+            <span>Playback rate {(clip.speed ?? 1).toFixed(2)}×</span>
+            <input type="range" min="0.25" max="4" step="0.05" value={clip.speed ?? 1}
+              onChange={e => upd({ speed: +e.target.value })} />
+          </label>
+          <div className={styles.btnRow}>
+            {[0.5, 1, 1.5, 2].map(s => (
+              <button key={s} className={styles.chip} onClick={() => upd({ speed: s })}>{s}×</button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Transform (video / image) */}
+      {isVisual && (
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}>Transform</div>
+          <label className={styles.field}>
+            <span>Fit</span>
+            <select value={clip.fit || 'cover'} onChange={e => upd({ fit: e.target.value })}>
+              <option value="cover">Cover</option>
+              <option value="contain">Contain</option>
+              <option value="fill">Fill / Stretch</option>
+            </select>
+          </label>
+          <label className={styles.field}>
+            <span>Scale {Math.round((clip.scale ?? 1) * 100)}%</span>
+            <input type="range" min="0.1" max="3" step="0.01" value={clip.scale ?? 1}
+              onChange={e => upd({ scale: +e.target.value })} />
+          </label>
+          <label className={styles.field}>
+            <span>Position X</span>
+            <input type="range" min="0" max="1" step="0.01" value={clip.x ?? 0.5}
+              onChange={e => upd({ x: +e.target.value })} />
+          </label>
+          <label className={styles.field}>
+            <span>Position Y</span>
+            <input type="range" min="0" max="1" step="0.01" value={clip.y ?? 0.5}
+              onChange={e => upd({ y: +e.target.value })} />
+          </label>
+          <label className={styles.field}>
+            <span>Rotation {clip.rotation ?? 0}°</span>
+            <input type="range" min="-180" max="180" step="1" value={clip.rotation ?? 0}
+              onChange={e => upd({ rotation: +e.target.value })} />
+          </label>
+          <label className={styles.field}>
+            <span>Opacity {Math.round((clip.opacity ?? 1) * 100)}%</span>
+            <input type="range" min="0" max="1" step="0.01" value={clip.opacity ?? 1}
+              onChange={e => upd({ opacity: +e.target.value })} />
+          </label>
+          <div className={styles.btnRow}>
+            <button className={`${styles.chip} ${clip.flipH ? styles.chipOn : ''}`}
+              onClick={() => upd({ flipH: !clip.flipH })}>⇄ Flip H</button>
+            <button className={`${styles.chip} ${clip.flipV ? styles.chipOn : ''}`}
+              onClick={() => upd({ flipV: !clip.flipV })}>⇅ Flip V</button>
+          </div>
+        </div>
+      )}
+
+      {/* Filters (video / image) */}
+      {isVisual && (
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}>Filters</div>
+          <label className={styles.field}>
+            <span>Brightness {Math.round((clip.brightness ?? 1) * 100)}%</span>
+            <input type="range" min="0" max="2" step="0.01" value={clip.brightness ?? 1}
+              onChange={e => upd({ brightness: +e.target.value })} />
+          </label>
+          <label className={styles.field}>
+            <span>Contrast {Math.round((clip.contrast ?? 1) * 100)}%</span>
+            <input type="range" min="0" max="2" step="0.01" value={clip.contrast ?? 1}
+              onChange={e => upd({ contrast: +e.target.value })} />
+          </label>
+          <label className={styles.field}>
+            <span>Saturation {Math.round((clip.saturate ?? 1) * 100)}%</span>
+            <input type="range" min="0" max="2" step="0.01" value={clip.saturate ?? 1}
+              onChange={e => upd({ saturate: +e.target.value })} />
+          </label>
+          <label className={styles.field}>
+            <span>Blur {clip.blur ?? 0}px</span>
+            <input type="range" min="0" max="20" step="0.5" value={clip.blur ?? 0}
+              onChange={e => upd({ blur: +e.target.value })} />
+          </label>
+          <label className={styles.field}>
+            <span>Grayscale {Math.round((clip.grayscale ?? 0) * 100)}%</span>
+            <input type="range" min="0" max="1" step="0.01" value={clip.grayscale ?? 0}
+              onChange={e => upd({ grayscale: +e.target.value })} />
+          </label>
+          <button className={styles.secondaryBtn} style={{ marginTop: 6 }}
+            onClick={() => upd({ brightness: 1, contrast: 1, saturate: 1, blur: 0, grayscale: 0, sepia: 0 })}>
+            Reset filters
+          </button>
+        </div>
+      )}
+
       {/* Audio/Voiceover */}
-      {(track.type === 'audio' || track.type === 'voiceover') && (
+      {isAudio && (
         <div className={styles.section}>
           <div className={styles.sectionTitle}>Audio</div>
           <label className={styles.field}>
             <span>Volume {Math.round((clip.volume ?? 1) * 100)}%</span>
             <input type="range" min="0" max="1" step="0.01"
               value={clip.volume ?? 1} onChange={e => upd({ volume: +e.target.value })} />
+          </label>
+          <label className={styles.field}>
+            <span>Fade in {clip.fadeIn ?? 0}s</span>
+            <input type="range" min="0" max="5" step="0.1" value={clip.fadeIn ?? 0}
+              onChange={e => upd({ fadeIn: +e.target.value })} />
+          </label>
+          <label className={styles.field}>
+            <span>Fade out {clip.fadeOut ?? 0}s</span>
+            <input type="range" min="0" max="5" step="0.1" value={clip.fadeOut ?? 0}
+              onChange={e => upd({ fadeOut: +e.target.value })} />
+          </label>
+          <label className={styles.field}>
+            <span>Mute</span>
+            <input type="checkbox" checked={!!clip.muted} onChange={e => upd({ muted: e.target.checked })} />
+          </label>
+        </div>
+      )}
+
+      {/* Video also gets fade + mute for its embedded audio */}
+      {track.type === 'video' && (
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}>Audio (from video)</div>
+          <label className={styles.field}>
+            <span>Volume {Math.round((clip.volume ?? 1) * 100)}%</span>
+            <input type="range" min="0" max="1" step="0.01" value={clip.volume ?? 1}
+              onChange={e => upd({ volume: +e.target.value })} />
           </label>
           <label className={styles.field}>
             <span>Mute</span>
@@ -73,12 +205,24 @@ export default function PropertiesPanel() {
             <input type="color" value={clip.color || '#ffffff'} onChange={e => upd({ color: e.target.value })}
               style={{ height: 30, padding: 2, width: '100%' }} />
           </label>
+          <div className={styles.btnRow}>
+            <button className={`${styles.chip} ${clip.bold ? styles.chipOn : ''}`}
+              onClick={() => upd({ bold: !clip.bold })}><b>B</b></button>
+            <button className={`${styles.chip} ${clip.italic ? styles.chipOn : ''}`}
+              onClick={() => upd({ italic: !clip.italic })}><i>I</i></button>
+          </div>
           <label className={styles.field}>
             <span>Align</span>
             <select value={clip.align || 'center'} onChange={e => upd({ align: e.target.value })}>
               <option>left</option><option>center</option><option>right</option>
             </select>
           </label>
+          <label className={styles.field}>
+            <span>Background</span>
+            <input type="color" value={clip.bg || '#000000'} onChange={e => upd({ bg: e.target.value })}
+              style={{ height: 30, padding: 2, width: '100%' }} />
+          </label>
+          <button className={styles.secondaryBtn} onClick={() => upd({ bg: null })}>No background</button>
           <label className={styles.field}>
             <span>X pos (0–1)</span>
             <input type="range" min="0" max="1" step="0.01" value={clip.x ?? 0.5}
@@ -101,6 +245,7 @@ export default function PropertiesPanel() {
             <select value={clip.shape || 'rect'} onChange={e => upd({ shape: e.target.value })}>
               <option value="rect">Rectangle</option>
               <option value="circle">Circle</option>
+              <option value="triangle">Triangle</option>
             </select>
           </label>
           <label className={styles.field}>
@@ -134,18 +279,18 @@ export default function PropertiesPanel() {
 
       {/* Transition */}
       <div className={styles.section}>
-        <div className={styles.sectionTitle}>Transition (in)</div>
+        <div className={styles.sectionTitle}>Transition (in / out)</div>
         <select value={clip.transition || 'none'} onChange={e => upd({ transition: e.target.value })}>
           {TRANSITIONS.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
       </div>
 
       <div className={styles.section}>
-        <button className={styles.dangerBtn} onClick={() => store.removeClip(clip.id)}>🗑 Delete Clip</button>
-        <button className={styles.secondaryBtn} style={{marginTop:6}}
-          onClick={() => store.splitClip(clip.id, store.getState().playhead)}>
-          ✂ Split at Playhead
-        </button>
+        <div className={styles.btnRow}>
+          <button className={styles.secondaryBtn} onClick={() => store.duplicateClip(clip.id)}>⧉ Duplicate</button>
+          <button className={styles.secondaryBtn} onClick={() => store.splitClip(clip.id, store.getState().playhead)}>✂ Split</button>
+        </div>
+        <button className={styles.dangerBtn} style={{ marginTop: 6 }} onClick={() => store.removeClip(clip.id)}>🗑 Delete Clip</button>
       </div>
     </div>
   );

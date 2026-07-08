@@ -1,7 +1,15 @@
 // Central state store using vanilla JS + event emitter (no Redux needed)
 import { v4 as uuidv4 } from 'uuid';
 
-const TRACK_TYPES = { VIDEO: 'video', AUDIO: 'audio', TEXT: 'text', SHAPE: 'shape', VOICEOVER: 'voiceover' };
+const TRACK_TYPES = { VIDEO: 'video', AUDIO: 'audio', TEXT: 'text', SHAPE: 'shape', VOICEOVER: 'voiceover', IMAGE: 'image' };
+
+const ASPECTS = {
+  '16:9': { w: 1280, h: 720 },
+  '9:16': { w: 720,  h: 1280 },
+  '1:1':  { w: 1080, h: 1080 },
+  '4:3':  { w: 960,  h: 720 },
+  '21:9': { w: 1280, h: 548 },
+};
 
 function createStore() {
   let state = {
@@ -9,14 +17,37 @@ function createStore() {
     playhead: 0,         // seconds
     duration: 60,        // total timeline seconds
     playing: false,
+    loop: false,
     zoom: 60,            // pixels per second
     selectedClipId: null,
     selectedTrackId: null,
     ffmpegReady: false,
     exportProgress: null,
+    canvasW: 1280,
+    canvasH: 720,
+    aspect: '16:9',
+    clipboard: null,     // a copied clip payload
+    canUndo: false,
+    canRedo: false,
   };
 
   const listeners = new Set();
+
+  // --- Undo / redo history (snapshots of tracks) ---
+  const past = [];
+  const future = [];
+  let lastSnap = 0;
+
+  function snapshot(force = false) {
+    const now = Date.now();
+    if (!force && now - lastSnap < 500) return; // coalesce rapid edits (slider drags)
+    lastSnap = now;
+    past.push(structuredClone(state.tracks));
+    if (past.length > 60) past.shift();
+    future.length = 0;
+    state.canUndo = past.length > 0;
+    state.canRedo = false;
+  }
 
   function notify() { listeners.forEach(fn => fn(state)); }
 
@@ -36,29 +67,52 @@ function createStore() {
     notify();
   }
 
-  return {
+  const api = {
     getState: () => state,
     subscribe: (fn) => { listeners.add(fn); return () => listeners.delete(fn); },
 
+    snapshot,
+
+    undo() {
+      if (!past.length) return;
+      future.push(structuredClone(state.tracks));
+      const tracks = past.pop();
+      state.canUndo = past.length > 0;
+      state.canRedo = true;
+      setState({ tracks, selectedClipId: null });
+    },
+    redo() {
+      if (!future.length) return;
+      past.push(structuredClone(state.tracks));
+      const tracks = future.pop();
+      state.canUndo = true;
+      state.canRedo = future.length > 0;
+      setState({ tracks, selectedClipId: null });
+    },
+
     // Tracks
     addTrack(type) {
+      snapshot(true);
       const id = uuidv4();
-      const names = { video:'Video', audio:'Audio', text:'Text', shape:'Shape', voiceover:'Voiceover' };
-      const newTrack = { id, type, name: `${names[type]} ${state.tracks.filter(t=>t.type===type).length+1}`, clips: [], volume: 1, muted: false };
+      const names = { video: 'Video', audio: 'Audio', text: 'Text', shape: 'Shape', voiceover: 'Voiceover', image: 'Image' };
+      const newTrack = { id, type, name: `${names[type]} ${state.tracks.filter(t => t.type === type).length + 1}`, clips: [], volume: 1, muted: false };
       setState({ tracks: [...state.tracks, newTrack] });
       return id;
     },
 
     removeTrack(trackId) {
+      snapshot(true);
       setState({ tracks: state.tracks.filter(t => t.id !== trackId), selectedTrackId: null, selectedClipId: null });
     },
 
-    updateTrack(trackId, patch) {
+    updateTrack(trackId, patch, skipHistory) {
+      if (!skipHistory) snapshot();
       setState({ tracks: state.tracks.map(t => t.id === trackId ? { ...t, ...patch } : t) });
     },
 
     // Clips
     addClip(trackId, clipData) {
+      snapshot(true);
       const id = uuidv4();
       const clip = { id, start: 0, duration: 5, offset: 0, volume: 1, muted: false, locked: false, ...clipData };
       setState({
@@ -69,7 +123,8 @@ function createStore() {
       return id;
     },
 
-    updateClip(clipId, patch) {
+    updateClip(clipId, patch, skipHistory) {
+      if (!skipHistory) snapshot();
       setState({
         tracks: state.tracks.map(t => ({
           ...t,
@@ -79,6 +134,7 @@ function createStore() {
     },
 
     removeClip(clipId) {
+      snapshot(true);
       setState({
         tracks: state.tracks.map(t => ({ ...t, clips: t.clips.filter(c => c.id !== clipId) })),
         selectedClipId: null,
@@ -93,24 +149,77 @@ function createStore() {
         const localTime = atTime - clip.start;
         if (localTime <= 0 || localTime >= clip.duration) return track;
         splitDone = true;
-        const left  = { ...clip, duration: localTime };
-        const right = { ...clip, id: uuidv4(), start: clip.start + localTime, duration: clip.duration - localTime, offset: clip.offset + localTime };
+        const speed = clip.speed || 1;
+        const left = { ...clip, duration: localTime };
+        const right = { ...clip, id: uuidv4(), start: clip.start + localTime, duration: clip.duration - localTime, offset: (clip.offset || 0) + localTime * speed };
         return { ...track, clips: [...track.clips.filter(c => c.id !== clipId), left, right] };
       });
-      setState({ tracks: newTracks });
+      if (splitDone) { snapshot(true); setState({ tracks: newTracks }); }
     },
 
-    // Playback
+    // Clipboard
+    copyClip(clipId) {
+      for (const t of state.tracks) {
+        const c = t.clips.find(x => x.id === clipId);
+        if (c) { setState({ clipboard: { clip: structuredClone(c), trackType: t.type } }); return; }
+      }
+    },
+
+    pasteClip() {
+      const cb = state.clipboard;
+      if (!cb) return;
+      snapshot(true);
+      // Paste onto a track of the same type (first match) or a new one.
+      let track = state.tracks.find(t => t.type === cb.trackType);
+      let tracks = state.tracks;
+      if (!track) {
+        const id = uuidv4();
+        const names = { video: 'Video', audio: 'Audio', text: 'Text', shape: 'Shape', voiceover: 'Voiceover', image: 'Image' };
+        track = { id, type: cb.trackType, name: `${names[cb.trackType]} ${tracks.filter(t => t.type === cb.trackType).length + 1}`, clips: [], volume: 1, muted: false };
+        tracks = [...tracks, track];
+      }
+      const newId = uuidv4();
+      const newClip = { ...structuredClone(cb.clip), id: newId, start: state.playhead };
+      setState({
+        tracks: tracks.map(t => t.id === track.id ? { ...t, clips: [...t.clips, newClip] } : t),
+        selectedClipId: newId,
+        selectedTrackId: track.id,
+      });
+    },
+
+    duplicateClip(clipId) {
+      snapshot(true);
+      const newId = uuidv4();
+      let selTrack = null;
+      const tracks = state.tracks.map(t => {
+        const c = t.clips.find(x => x.id === clipId);
+        if (!c) return t;
+        selTrack = t.id;
+        const dup = { ...structuredClone(c), id: newId, start: c.start + c.duration };
+        return { ...t, clips: [...t.clips, dup] };
+      });
+      if (selTrack) setState({ tracks, selectedClipId: newId, selectedTrackId: selTrack });
+    },
+
+    // Playback / view
     setPlayhead(t) { setState({ playhead: Math.max(0, Math.min(t, state.duration)) }); },
     setPlaying(v) { setState({ playing: v }); },
+    setLoop(v) { setState({ loop: v }); },
     setZoom(z) { setState({ zoom: Math.max(20, Math.min(300, z)) }); },
     setDuration(d) { setState({ duration: d }); },
+    setAspect(key) {
+      const a = ASPECTS[key]; if (!a) return;
+      setState({ aspect: key, canvasW: a.w, canvasH: a.h });
+    },
     select(trackId, clipId) { setState({ selectedTrackId: trackId, selectedClipId: clipId }); },
     setFFmpegReady(v) { setState({ ffmpegReady: v }); },
     setExportProgress(v) { setState({ exportProgress: v }); },
 
     TRACK_TYPES,
+    ASPECTS,
   };
+
+  return api;
 }
 
 export const store = createStore();

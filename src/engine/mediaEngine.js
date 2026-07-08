@@ -9,6 +9,7 @@ class MediaEngine {
     this.ctx = null;                 // AudioContext (created on first user gesture)
     this.recordDest = null;          // MediaStreamAudioDestinationNode (for export)
     this.entries = new Map();        // clipId -> { el, source, gain, ready }
+    this.images = new Map();         // clipId -> HTMLImageElement
     this.playing = false;
   }
 
@@ -34,6 +35,21 @@ class MediaEngine {
 
   // Create/destroy media elements to match the current clip list.
   sync(tracks) {
+    // Images (no audio) are handled separately.
+    const wantImg = new Map();
+    for (const track of tracks) {
+      if (track.type !== 'image') continue;
+      for (const clip of track.clips) if (clip.src) wantImg.set(clip.id, clip);
+    }
+    for (const id of [...this.images.keys()]) if (!wantImg.has(id)) this.images.delete(id);
+    for (const [id, clip] of wantImg) {
+      if (this.images.has(id)) continue;
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = clip.src;
+      this.images.set(id, img);
+    }
+
     const wanted = new Map(); // clipId -> {clip, track}
     for (const track of tracks) {
       if (!['video', 'audio', 'voiceover'].includes(track.type)) continue;
@@ -80,11 +96,22 @@ class MediaEngine {
     }
   }
 
-  _effectiveGain(clip, track) {
+  _effectiveGain(clip, track, playhead) {
     if (track.muted || clip.muted) return 0;
     const cv = clip.volume ?? 1;
     const tv = track.volume ?? 1;
-    return Math.max(0, Math.min(1, cv * tv));
+    let g = cv * tv;
+    // Audio fade in/out envelope.
+    const tClip = playhead - clip.start;
+    if (clip.fadeIn && tClip < clip.fadeIn) g *= Math.max(0, tClip / clip.fadeIn);
+    if (clip.fadeOut && tClip > clip.duration - clip.fadeOut) g *= Math.max(0, (clip.duration - tClip) / clip.fadeOut);
+    return Math.max(0, Math.min(1, g));
+  }
+
+  // Source time within a clip, accounting for playback speed.
+  _localTime(clip, playhead) {
+    const speed = clip.speed || 1;
+    return (playhead - clip.start) * speed + (clip.offset || 0);
   }
 
   // Update gains + seek every element to match playhead. Used when paused/scrubbing.
@@ -94,8 +121,9 @@ class MediaEngine {
         const entry = this.entries.get(clip.id);
         if (!entry) continue;
         const active = playhead >= clip.start && playhead <= clip.start + clip.duration;
-        const localTime = playhead - clip.start + (clip.offset || 0);
-        if (entry.gain) entry.gain.gain.value = this._effectiveGain(clip, track);
+        const localTime = this._localTime(clip, playhead);
+        if (entry.gain) entry.gain.gain.value = this._effectiveGain(clip, track, playhead);
+        entry.el.playbackRate = clip.speed || 1;
         if (active) {
           if (entry.ready && Number.isFinite(localTime)) {
             try { entry.el.currentTime = Math.max(0, localTime); } catch { /* noop */ }
@@ -115,9 +143,10 @@ class MediaEngine {
         const entry = this.entries.get(clip.id);
         if (!entry) continue;
         this._wire(entry);
-        if (entry.gain) entry.gain.gain.value = this._effectiveGain(clip, track);
+        if (entry.gain) entry.gain.gain.value = this._effectiveGain(clip, track, playhead);
+        entry.el.playbackRate = clip.speed || 1;
         const active = playhead >= clip.start && playhead <= clip.start + clip.duration;
-        const localTime = playhead - clip.start + (clip.offset || 0);
+        const localTime = this._localTime(clip, playhead);
         if (active && entry.ready) {
           try {
             entry.el.currentTime = Math.max(0, localTime);
@@ -145,8 +174,9 @@ class MediaEngine {
         const entry = this.entries.get(clip.id);
         if (!entry || !entry.ready) continue;
         const active = playhead >= clip.start && playhead <= clip.start + clip.duration;
-        const localTime = playhead - clip.start + (clip.offset || 0);
-        if (entry.gain) entry.gain.gain.value = this._effectiveGain(clip, track);
+        const localTime = this._localTime(clip, playhead);
+        if (entry.gain) entry.gain.gain.value = this._effectiveGain(clip, track, playhead);
+        entry.el.playbackRate = clip.speed || 1;
         if (active) {
           if (entry.el.paused) {
             try { entry.el.currentTime = Math.max(0, localTime); } catch { /* noop */ }
@@ -166,6 +196,10 @@ class MediaEngine {
   getVideoElement(clipId) {
     const entry = this.entries.get(clipId);
     return entry ? entry.el : null;
+  }
+
+  getImageElement(clipId) {
+    return this.images.get(clipId) || null;
   }
 
   // Audio stream for export (mix of all tracks).

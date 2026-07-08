@@ -4,7 +4,7 @@ import { mediaEngine } from './mediaEngine';
 
 const TRANSITION_DUR = 0.5; // seconds for in/out transitions
 
-// Returns { alpha, scale, dx } for a clip at localTime (time since clip start).
+// Returns { alpha, scale, dx, dy } for a clip at localTime (time since clip start).
 function transitionState(clip, localTime) {
   const t = clip.transition || 'none';
   if (t === 'none') return { alpha: 1, scale: 1, dx: 0, dy: 0 };
@@ -23,15 +23,56 @@ function transitionState(clip, localTime) {
   }
 }
 
+// Build a CSS filter string from a clip's colour-adjustment props.
+function filterString(clip) {
+  const f = [];
+  const b = clip.brightness ?? 1, c = clip.contrast ?? 1, s = clip.saturate ?? 1;
+  if (b !== 1) f.push(`brightness(${b})`);
+  if (c !== 1) f.push(`contrast(${c})`);
+  if (s !== 1) f.push(`saturate(${s})`);
+  if (clip.blur) f.push(`blur(${clip.blur}px)`);
+  if (clip.grayscale) f.push(`grayscale(${clip.grayscale})`);
+  if (clip.sepia) f.push(`sepia(${clip.sepia})`);
+  return f.length ? f.join(' ') : 'none';
+}
+
+// Draw a video/image element with fit + transform.
+function drawMedia(ctx, el, W, H, clip, ts) {
+  const iw = el.videoWidth || el.naturalWidth || W;
+  const ih = el.videoHeight || el.naturalHeight || H;
+  const fit = clip.fit || 'cover';
+  let dw, dh;
+  if (fit === 'fill') {
+    dw = W; dh = H;
+  } else {
+    const arFrame = W / H, arImg = iw / ih;
+    if (fit === 'contain') {
+      if (arImg > arFrame) { dw = W; dh = W / arImg; } else { dh = H; dw = H * arImg; }
+    } else { // cover
+      if (arImg > arFrame) { dh = H; dw = H * arImg; } else { dw = W; dh = W / arImg; }
+    }
+  }
+  const scale = (clip.scale ?? 1) * ts.scale;
+  dw *= scale; dh *= scale;
+  const cx = (clip.x ?? 0.5) * W + ts.dx * W;
+  const cy = (clip.y ?? 0.5) * H + ts.dy * H;
+  const rot = ((clip.rotation ?? 0) * Math.PI) / 180;
+
+  ctx.filter = filterString(clip);
+  ctx.translate(cx, cy);
+  if (rot) ctx.rotate(rot);
+  if (clip.flipH || clip.flipV) ctx.scale(clip.flipH ? -1 : 1, clip.flipV ? -1 : 1);
+  try { ctx.drawImage(el, -dw / 2, -dh / 2, dw, dh); } catch { /* frame not ready */ }
+  ctx.filter = 'none';
+}
+
 // Draw one full frame of the timeline at time `ph` onto ctx (W x H).
 export function renderFrame(ctx, W, H, tracks, ph) {
   ctx.clearRect(0, 0, W, H);
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, W, H);
 
-  // Draw bottom-up so later tracks render on top.
   for (const track of tracks) {
-    if (track.muted && track.type !== 'video') { /* muted audio still silent */ }
     for (const clip of track.clips) {
       if (ph < clip.start || ph > clip.start + clip.duration) continue;
       const localTime = ph - clip.start;
@@ -42,14 +83,12 @@ export function renderFrame(ctx, W, H, tracks, ph) {
 
       if (track.type === 'video' && clip.src) {
         const vid = mediaEngine.getVideoElement(clip.id);
-        if (vid && vid.readyState >= 2) {
-          const sw = W * ts.scale, sh = H * ts.scale;
-          const ox = (W - sw) / 2 + ts.dx * W;
-          const oy = (H - sh) / 2 + ts.dy * H;
-          try { ctx.drawImage(vid, ox, oy, sw, sh); } catch { /* frame not ready */ }
-        }
+        if (vid && vid.readyState >= 2) drawMedia(ctx, vid, W, H, clip, ts);
+      } else if (track.type === 'image' && clip.src) {
+        const img = mediaEngine.getImageElement(clip.id);
+        if (img && img.complete && img.naturalWidth) drawMedia(ctx, img, W, H, clip, ts);
       } else if (track.type === 'text') {
-        ctx.font = `${clip.bold ? 'bold ' : ''}${clip.fontSize || 48}px ${clip.fontFamily || 'system-ui, sans-serif'}`;
+        ctx.font = `${clip.italic ? 'italic ' : ''}${clip.bold ? 'bold ' : ''}${clip.fontSize || 48}px ${clip.fontFamily || 'system-ui, sans-serif'}`;
         ctx.fillStyle = clip.color || '#ffffff';
         ctx.textAlign = clip.align || 'center';
         ctx.textBaseline = 'middle';

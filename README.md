@@ -4,14 +4,21 @@ A browser-based video editor that runs entirely locally — no uploads, no serve
 
 ## Features
 
-- **Multi-track timeline** — video, audio, text, shape, and voiceover tracks
+- **Multi-track timeline** — video, audio, image, text, shape, and voiceover tracks
 - **Trim, move, split & snap** — drag clips, trim edges, split at the playhead, edges snap to neighbours
-- **Live canvas preview** with real audio playback (Web Audio graph)
-- **Text & shape overlays** — fonts, colours, alignment, background, stroke; rectangles, circles, triangles
+- **Undo / redo** with full history
+- **Copy · paste · duplicate** clips
+- **Media import** — video, audio, and images
+- **Aspect-ratio presets** — 16:9, 9:16, 1:1, 4:3, 21:9 (canvas resizes live)
+- **Clip playback speed** — 0.25×–4× slow-mo / fast-motion
+- **Transform** — scale, position, rotation, flip, and fit (cover / contain / fill) on video & images
+- **Colour filters** — brightness, contrast, saturation, blur, grayscale
+- **Audio fades** — per-clip fade in / fade out, volume, mute
 - **Transitions** — fade, zoom, slide, wipe (rendered in preview and export)
 - **Voiceover recording** straight from your mic
-- **Real export** — renders the timeline to **WebM** (native) or **MP4** (H.264 via FFmpeg.wasm)
-- **Keyboard shortcuts** — Space to play/pause, Delete to remove a clip
+- **Live canvas preview** with real audio playback + loop
+- **Text & shape overlays** — fonts, bold/italic, colours, alignment, background, stroke; rectangles, circles, triangles
+- **Real export** — renders the timeline to **WebM** (native) or **MP4** (H.264 via FFmpeg.wasm) at 480/720/1080p
 - **No uploads** — all processing happens locally in your browser
 
 ## Keyboard shortcuts
@@ -19,6 +26,10 @@ A browser-based video editor that runs entirely locally — no uploads, no serve
 | Key | Action |
 |-----|--------|
 | `Space` | Play / pause |
+| `←` / `→` | Step playhead 0.1s (hold `Shift` for 1s) |
+| `Home` / `End` | Jump to start / end |
+| `Ctrl/⌘ + Z` / `Ctrl/⌘ + Shift + Z` (or `Y`) | Undo / redo |
+| `Ctrl/⌘ + C` / `V` / `D` | Copy / paste / duplicate clip |
 | `Delete` / `Backspace` | Delete selected clip |
 | Double-click clip | Split at playhead |
 

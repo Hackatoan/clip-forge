@@ -5,14 +5,12 @@ import { exportTimeline } from '../engine/exporter';
 import { isCrossOriginIsolated } from '../engine/ffmpeg';
 import styles from './ExportModal.module.css';
 
-const RESOLUTIONS = {
-  '480p':  { width: 854,  height: 480 },
-  '720p':  { width: 1280, height: 720 },
-  '1080p': { width: 1920, height: 1080 },
-};
+const HEIGHTS = { '480p': 480, '720p': 720, '1080p': 1080 };
 
 export default function ExportModal({ onClose }) {
-  const { tracks, duration } = useStore(s => ({ tracks: s.tracks, duration: s.duration }));
+  const { tracks, duration, canvasW, canvasH, aspect } = useStore(s => ({
+    tracks: s.tracks, duration: s.duration, canvasW: s.canvasW, canvasH: s.canvasH, aspect: s.aspect,
+  }));
   const [res, setRes] = useState('720p');
   const [fps, setFps] = useState(30);
   const [format, setFormat] = useState('webm');
@@ -32,7 +30,10 @@ export default function ExportModal({ onClose }) {
     store.setPlaying(false);
     store.setPlayhead(0);
     try {
-      const { width, height } = RESOLUTIONS[res];
+      // Derive dimensions from the project aspect ratio and the chosen height.
+      const height = HEIGHTS[res];
+      let width = Math.round(height * (canvasW / canvasH));
+      if (width % 2) width += 1; // even dimensions for H.264
       const { blob, ext, warning } = await exportTimeline({
         tracks, duration, width, height, fps, format,
         onProgress: setProgress,
@@ -77,13 +78,13 @@ export default function ExportModal({ onClose }) {
         ) : (
           <div className={styles.body}>
             <div className={styles.summary}>
-              {totalClips} clip{totalClips !== 1 ? 's' : ''} · {Math.ceil(duration)}s timeline
+              {totalClips} clip{totalClips !== 1 ? 's' : ''} · {Math.ceil(duration)}s · {aspect} ({Math.round(HEIGHTS[res] * (canvasW / canvasH))}×{HEIGHTS[res]})
             </div>
 
             <label className={styles.field}>
               <span>Resolution</span>
               <select value={res} onChange={e => setRes(e.target.value)}>
-                {Object.keys(RESOLUTIONS).map(r => <option key={r} value={r}>{r}</option>)}
+                {Object.keys(HEIGHTS).map(r => <option key={r} value={r}>{r}</option>)}
               </select>
             </label>
 

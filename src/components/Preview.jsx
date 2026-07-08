@@ -11,9 +11,10 @@ export default function Preview() {
   const startWallRef = useRef(0);
   const startPhRef = useRef(0);
 
-  const { tracks, playing, playhead, duration } = useStore(s => ({
+  const { tracks, playing, playhead, duration, loop, canvasW, canvasH } = useStore(s => ({
     tracks: s.tracks, playing: s.playing,
-    playhead: s.playhead, duration: s.duration,
+    playhead: s.playhead, duration: s.duration, loop: s.loop,
+    canvasW: s.canvasW, canvasH: s.canvasH,
   }));
 
   const draw = (ph) => {
@@ -26,16 +27,30 @@ export default function Preview() {
   // Keep media elements reconciled with the timeline.
   useEffect(() => { mediaEngine.sync(tracks); }, [tracks]);
 
+  // Redraw when the canvas is resized (aspect-ratio change clears it).
+  useEffect(() => { if (!playing) draw(playhead); });
+
   // Playback loop.
   useEffect(() => {
     if (playing) {
       mediaEngine.play(playhead, tracks);
       startWallRef.current = performance.now();
       startPhRef.current = playhead;
-      const loop = () => {
+      const step = () => {
         const elapsed = (performance.now() - startWallRef.current) / 1000;
         const newPh = startPhRef.current + elapsed;
         if (newPh >= duration) {
+          if (loop) {
+            // Restart from the beginning without stopping playback.
+            store.setPlayhead(0);
+            mediaEngine.pause();
+            mediaEngine.play(0, tracks);
+            startWallRef.current = performance.now();
+            startPhRef.current = 0;
+            draw(0);
+            rafRef.current = requestAnimationFrame(step);
+            return;
+          }
           store.setPlaying(false);
           store.setPlayhead(duration);
           mediaEngine.pause();
@@ -45,9 +60,9 @@ export default function Preview() {
         mediaEngine.tick(newPh, tracks);
         store.setPlayhead(newPh);
         draw(newPh);
-        rafRef.current = requestAnimationFrame(loop);
+        rafRef.current = requestAnimationFrame(step);
       };
-      rafRef.current = requestAnimationFrame(loop);
+      rafRef.current = requestAnimationFrame(step);
     } else {
       cancelAnimationFrame(rafRef.current);
       mediaEngine.pause();
@@ -72,7 +87,8 @@ export default function Preview() {
 
   return (
     <div className={styles.preview}>
-      <canvas ref={canvasRef} width={1280} height={720} className={styles.canvas} />
+      <canvas ref={canvasRef} width={canvasW} height={canvasH} className={styles.canvas}
+        style={{ aspectRatio: `${canvasW} / ${canvasH}` }} />
       <div className={styles.timecode}>{fmt(playhead)} / {fmt(duration)}</div>
     </div>
   );

@@ -40,10 +40,10 @@ export default function Timeline() {
   };
 
   // Clip interactions
-  const onClipMouseDown = (e, clip, mode = 'move') => {
+  const onClipMouseDown = (e, clip, trackId, mode = 'move') => {
     e.stopPropagation();
+    store.select(trackId, clip.id);
     if (clip.locked) return;
-    store.select(null, clip.id);
     setDragging({
       clipId: clip.id, mode,
       startX: e.clientX,
@@ -158,15 +158,15 @@ export default function Timeline() {
                     background: trackColors[track.type] + '33',
                     borderColor: trackColors[track.type],
                   }}
-                  onMouseDown={e => onClipMouseDown(e, clip, 'move')}
+                  onMouseDown={e => onClipMouseDown(e, clip, track.id, 'move')}
                   onDoubleClick={() => store.splitClip(clip.id, playhead)}
                   title="Drag to move · Edges to trim · Double-click to split at playhead"
                 >
                   <div className={styles.trimHandle} data-side="l"
-                    onMouseDown={e => onClipMouseDown(e, clip, 'trim-left')} />
+                    onMouseDown={e => onClipMouseDown(e, clip, track.id, 'trim-left')} />
                   <span className={styles.clipLabel}>{clip.name || clip.text || track.type}</span>
                   <div className={styles.trimHandle} data-side="r"
-                    onMouseDown={e => onClipMouseDown(e, clip, 'trim-right')} />
+                    onMouseDown={e => onClipMouseDown(e, clip, track.id, 'trim-right')} />
                 </div>
               ))}
             </div>

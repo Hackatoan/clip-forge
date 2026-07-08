@@ -65,6 +65,20 @@
 }
 .dangerBtn:hover { background: var(--danger); color: #fff; }
 
+.btnRow { display: flex; gap: 6px; }
+.btnRow > * { flex: 1; }
+
+.chip {
+  background: var(--bg-surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 5px 8px;
+  border-radius: 5px;
+  font-size: 0.72rem;
+}
+.chip:hover { border-color: var(--primary); }
+.chipOn { background: var(--primary); color: #fff; border-color: var(--primary); }
+
 .elemBtn {
   background: var(--bg-surface);
   color: var(--text);

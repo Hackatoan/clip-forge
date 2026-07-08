@@ -14,7 +14,7 @@
 .logo { font-size: 1.2rem; }
 .name { font-weight: 700; font-size: 0.95rem; color: var(--primary); letter-spacing: 0.5px; }
 
-.transport { display: flex; gap: 4px; }
+.transport { display: flex; gap: 4px; align-items: center; }
 .tBtn {
   background: var(--bg-surface2);
   color: var(--text);
@@ -24,6 +24,18 @@
   border: 1px solid var(--border);
 }
 .tBtn:hover { border-color: var(--primary); }
+.tBtn:disabled { opacity: 0.35; cursor: not-allowed; }
+.sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+.aspect {
+  background: var(--bg-surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 5px 6px;
+  font-size: 0.8rem;
+  width: auto;
+  margin-right: 8px;
+}
 .active { border-color: var(--primary) !important; }
 
 .panels { display: flex; gap: 4px; margin-left: 8px; }
@@ -38,7 +50,7 @@
 .pBtn:hover { color: var(--text); background: var(--bg-surface2); }
 .pActive { background: var(--bg-surface2) !important; color: var(--text) !important; border-color: var(--border) !important; }
 
-.right { margin-left: auto; }
+.right { margin-left: auto; display: flex; align-items: center; }
 .exportBtn {
   background: var(--primary);
   color: #fff;
