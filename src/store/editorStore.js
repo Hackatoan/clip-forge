@@ -20,8 +20,19 @@ function createStore() {
 
   function notify() { listeners.forEach(fn => fn(state)); }
 
+  // Timeline auto-grows to fit the furthest clip end (min 10s, +2s padding).
+  function contentEnd(tracks) {
+    let end = 0;
+    for (const t of tracks) for (const c of t.clips) end = Math.max(end, c.start + c.duration);
+    return end;
+  }
+
   function setState(patch) {
     state = { ...state, ...patch };
+    if (patch.tracks) {
+      const needed = Math.max(10, Math.ceil(contentEnd(patch.tracks)) + 2);
+      if (needed !== state.duration) state.duration = needed;
+    }
     notify();
   }
 

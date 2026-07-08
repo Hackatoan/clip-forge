@@ -58,7 +58,7 @@ export default function MediaPanel() {
       recorder.start();
       micRef.current.textContent = '⏹ Stop Recording';
       micRef.current.onclick = () => { recorder.stop(); micRef.current.textContent = '🎙 Record Voiceover'; micRef.current.onclick = startRecording; };
-    } catch (e) {
+    } catch {
       alert('Mic access denied');
     }
   };

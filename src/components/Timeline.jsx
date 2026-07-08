@@ -3,16 +3,34 @@ import { useStore } from '../hooks/useStore';
 import { store } from '../store/editorStore';
 import styles from './Timeline.module.css';
 
-const TRACK_H = 48;
 const HEADER_W = 120;
 
 export default function Timeline() {
   const { tracks, playhead, duration, zoom, selectedClipId } = useStore(s => s);
   const rulerRef = useRef(null);
-  const [dragging, setDragging] = useState(null); // {clipId, startX, origStart}
+  const [dragging, setDragging] = useState(null); // {clipId, mode, startX, orig...}
 
   const toX = t => t * zoom;
   const toT = x => x / zoom;
+
+  // Collect snap targets (other clip edges + playhead + 0).
+  const snapPoints = (excludeId) => {
+    const pts = [0, playhead];
+    for (const tr of tracks) for (const c of tr.clips) {
+      if (c.id === excludeId) continue;
+      pts.push(c.start, c.start + c.duration);
+    }
+    return pts;
+  };
+  const snap = (t, excludeId) => {
+    const threshold = 8 / zoom; // ~8px
+    let best = t, bestD = threshold;
+    for (const p of snapPoints(excludeId)) {
+      const d = Math.abs(p - t);
+      if (d < bestD) { best = p; bestD = d; }
+    }
+    return best;
+  };
 
   // Ruler click → set playhead
   const onRulerClick = e => {
@@ -21,21 +39,43 @@ export default function Timeline() {
     store.setPlayhead(toT(x));
   };
 
-  // Clip drag
-  const onClipMouseDown = (e, clip) => {
+  // Clip interactions
+  const onClipMouseDown = (e, clip, mode = 'move') => {
     e.stopPropagation();
+    if (clip.locked) return;
     store.select(null, clip.id);
-    const startX = e.clientX;
-    const origStart = clip.start;
-    setDragging({ clipId: clip.id, startX, origStart });
+    setDragging({
+      clipId: clip.id, mode,
+      startX: e.clientX,
+      origStart: clip.start,
+      origDuration: clip.duration,
+      origOffset: clip.offset || 0,
+    });
   };
 
   const onMouseMove = useCallback(e => {
     if (!dragging) return;
-    const dx = e.clientX - dragging.startX;
-    const newStart = Math.max(0, dragging.origStart + toT(dx));
-    store.updateClip(dragging.clipId, { start: newStart });
-  }, [dragging, zoom]);
+    const dx = toT(e.clientX - dragging.startX);
+    const { clipId, mode, origStart, origDuration, origOffset } = dragging;
+    if (mode === 'move') {
+      const newStart = Math.max(0, snap(origStart + dx, clipId));
+      store.updateClip(clipId, { start: newStart });
+    } else if (mode === 'trim-left') {
+      let newStart = Math.max(0, snap(origStart + dx, clipId));
+      let delta = newStart - origStart;
+      // Don't let duration go below 0.2s.
+      if (origDuration - delta < 0.2) { delta = origDuration - 0.2; newStart = origStart + delta; }
+      store.updateClip(clipId, {
+        start: newStart,
+        duration: origDuration - delta,
+        offset: Math.max(0, origOffset + delta),
+      });
+    } else if (mode === 'trim-right') {
+      const end = snap(origStart + origDuration + dx, clipId);
+      const newDur = Math.max(0.2, end - origStart);
+      store.updateClip(clipId, { duration: newDur });
+    }
+  }, [dragging, zoom, tracks, playhead]);
 
   const onMouseUp = () => setDragging(null);
 
@@ -118,11 +158,15 @@ export default function Timeline() {
                     background: trackColors[track.type] + '33',
                     borderColor: trackColors[track.type],
                   }}
-                  onMouseDown={e => onClipMouseDown(e, clip)}
+                  onMouseDown={e => onClipMouseDown(e, clip, 'move')}
                   onDoubleClick={() => store.splitClip(clip.id, playhead)}
-                  title="Drag to move · Double-click to split at playhead"
+                  title="Drag to move · Edges to trim · Double-click to split at playhead"
                 >
+                  <div className={styles.trimHandle} data-side="l"
+                    onMouseDown={e => onClipMouseDown(e, clip, 'trim-left')} />
                   <span className={styles.clipLabel}>{clip.name || clip.text || track.type}</span>
+                  <div className={styles.trimHandle} data-side="r"
+                    onMouseDown={e => onClipMouseDown(e, clip, 'trim-right')} />
                 </div>
               ))}
             </div>

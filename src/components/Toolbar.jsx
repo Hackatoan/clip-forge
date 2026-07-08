@@ -2,8 +2,8 @@ import { useStore } from '../hooks/useStore';
 import { store } from '../store/editorStore';
 import styles from './Toolbar.module.css';
 
-export default function Toolbar({ onPanel, activePanel }) {
-  const { playing, ffmpegReady, exportProgress } = useStore(s => s);
+export default function Toolbar({ onPanel, activePanel, onExport }) {
+  const { playing, ffmpegReady } = useStore(s => s);
 
   const play  = () => store.setPlaying(true);
   const pause = () => store.setPlaying(false);
@@ -41,15 +41,12 @@ export default function Toolbar({ onPanel, activePanel }) {
       </div>
 
       <div className={styles.right}>
-        {exportProgress !== null
-          ? <span className={styles.exporting}>Exporting {Math.round(exportProgress)}%</span>
-          : <button
-              className={styles.exportBtn}
-              disabled={!ffmpegReady}
-              title={ffmpegReady ? 'Export video' : 'FFmpeg loading…'}
-              onClick={() => alert('Export: select a clip and use Export panel')}
-            >⬇ Export</button>
-        }
+        <button
+          className={styles.exportBtn}
+          disabled={!ffmpegReady}
+          title={ffmpegReady ? 'Export video' : 'Loading…'}
+          onClick={onExport}
+        >⬇ Export</button>
       </div>
     </div>
   );

@@ -125,11 +125,25 @@
   min-width: 4px;
   display: flex;
   align-items: center;
-  padding: 0 4px;
+  justify-content: space-between;
+  padding: 0;
 }
 .clip:active { cursor: grabbing; }
 
+.trimHandle {
+  width: 7px;
+  align-self: stretch;
+  cursor: ew-resize;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.18);
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.clip:hover .trimHandle { opacity: 1; }
+
 .clipLabel {
+  flex: 1;
+  padding: 0 4px;
   font-size: 0.65rem;
   color: var(--text);
   white-space: nowrap;
