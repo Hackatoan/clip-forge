@@ -2,13 +2,15 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import { useStore } from '../hooks/useStore';
 import { store } from '../store/editorStore';
 import { ensureWaveform, ensurePoster } from '../engine/mediaThumbs';
+import { importFiles } from '../engine/importMedia';
 import styles from './Timeline.module.css';
 
 export default function Timeline() {
-  const { tracks, playhead, duration, zoom, selectedClipId, snap: snapOn } = useStore(s => s);
+  const { tracks, playhead, duration, zoom, selectedClipId, selectedClipIds, snap: snapOn } = useStore(s => s);
   const rulerRef = useRef(null);
   const areaRef = useRef(null);
   const [dragging, setDragging] = useState(null); // {clipId, mode, startX, orig...}
+  const [dropTarget, setDropTarget] = useState(null); // trackId | '__new__' | null
 
   // Generate waveforms (audio) and poster thumbnails (video/image) once each.
   useEffect(() => {
@@ -69,18 +71,62 @@ export default function Timeline() {
     store.setZoom((w - 40) / Math.max(1, duration));
   };
 
+  // Drag-and-drop file import onto the timeline.
+  const isFileDrag = e => e.dataTransfer && [...e.dataTransfer.types].includes('Files');
+  const onTrackDragOver = (e, trackId) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault(); e.stopPropagation();
+    setDropTarget(trackId);
+  };
+  const onTrackDrop = (e, track) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault(); e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const startTime = Math.max(0, snap(toT(e.clientX - rect.left), null, e.altKey));
+    importFiles(e.dataTransfer.files, { trackId: track.id, startTime });
+    setDropTarget(null);
+  };
+  const onAreaDragOver = e => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault(); e.stopPropagation();
+    if (!dropTarget) setDropTarget('__new__');
+  };
+  const onAreaDrop = e => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault(); e.stopPropagation();
+    const rect = areaRef.current.getBoundingClientRect();
+    const startTime = Math.max(0, toT(e.clientX - rect.left + areaRef.current.scrollLeft));
+    importFiles(e.dataTransfer.files, { startTime });
+    setDropTarget(null);
+  };
+
   // Clip interactions
   const onClipMouseDown = (e, clip, trackId, mode = 'move') => {
     e.stopPropagation();
-    store.select(trackId, clip.id);
+    const st = store.getState();
+    const ids = st.selectedClipIds || [];
+    // Shift/Ctrl-click toggles multi-selection (no drag).
+    if (mode === 'move' && (e.shiftKey || e.metaKey || e.ctrlKey)) {
+      store.toggleSelect(trackId, clip.id);
+      return;
+    }
+    const inMulti = ids.includes(clip.id) && ids.length > 1;
+    if (inMulti) store.setPrimary(trackId, clip.id);
+    else store.select(trackId, clip.id);
     if (clip.locked) return;
-    setDragging({
+    const base = {
       clipId: clip.id, mode,
       startX: e.clientX,
       origStart: clip.start,
       origDuration: clip.duration,
       origOffset: clip.offset || 0,
-    });
+    };
+    if (mode === 'move' && inMulti) {
+      base.multi = [];
+      for (const t of st.tracks) for (const c of t.clips)
+        if (ids.includes(c.id) && !c.locked) base.multi.push({ id: c.id, origStart: c.start });
+    }
+    setDragging(base);
   };
 
   const onMouseMove = useCallback(e => {
@@ -91,7 +137,12 @@ export default function Timeline() {
     const bypass = e.altKey;
     if (mode === 'move') {
       const newStart = Math.max(0, snap(origStart + dx, clipId, bypass));
-      store.updateClip(clipId, { start: newStart });
+      if (dragging.multi) {
+        const delta = newStart - origStart;
+        for (const m of dragging.multi) store.updateClip(m.id, { start: Math.max(0, m.origStart + delta) });
+      } else {
+        store.updateClip(clipId, { start: newStart });
+      }
     } else if (mode === 'trim-left') {
       let newStart = Math.max(0, snap(origStart + dx, clipId, bypass));
       let delta = newStart - origStart;
@@ -168,7 +219,9 @@ export default function Timeline() {
         </div>
 
         {/* Scrollable canvas area */}
-        <div className={styles.canvasArea} ref={areaRef}>
+        <div className={styles.canvasArea} ref={areaRef}
+          onDragOver={onAreaDragOver} onDrop={onAreaDrop}
+          onDragLeave={e => { if (e.currentTarget === e.target) setDropTarget(null); }}>
           {/* Ruler */}
           <div className={styles.ruler} ref={rulerRef}
             style={{ width: toX(duration) + 200 }}
@@ -187,19 +240,21 @@ export default function Timeline() {
 
           {/* Tracks */}
           {tracks.map(track => (
-            <div key={track.id} className={styles.track}
+            <div key={track.id} className={`${styles.track} ${dropTarget === track.id ? styles.dropOver : ''}`}
               onMouseDown={() => store.select(null, null)}
+              onDragOver={e => onTrackDragOver(e, track.id)}
+              onDrop={e => onTrackDrop(e, track)}
               style={{ width: toX(duration) + 200, opacity: track.muted ? 0.4 : 1 }}>
               {track.clips.map(clip => {
                 const visual = clip.thumb
-                  ? { backgroundImage: `url(${clip.thumb})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                  ? { backgroundImage: `url(${clip.thumb})`, backgroundSize: 'auto 100%', backgroundRepeat: 'repeat-x', backgroundPosition: 'left center', backgroundColor: trackColors[track.type] + '22' }
                   : clip.wave
                     ? { backgroundImage: `url(${clip.wave})`, backgroundSize: '100% 80%', backgroundRepeat: 'no-repeat', backgroundPosition: 'center', backgroundColor: trackColors[track.type] + '33' }
                     : { background: trackColors[track.type] + '33' };
                 return (
                 <div
                   key={clip.id}
-                  className={`${styles.clip} ${clip.id === selectedClipId ? styles.selected : ''}`}
+                  className={`${styles.clip} ${selectedClipIds.includes(clip.id) ? styles.selected : ''} ${clip.id === selectedClipId ? styles.primary : ''}`}
                   style={{
                     left: toX(clip.start),
                     width: Math.max(toX(clip.duration), 4),
@@ -223,6 +278,11 @@ export default function Timeline() {
               })}
             </div>
           ))}
+
+          {/* Drop-to-create-a-new-layer hint (shown while dragging files) */}
+          <div className={`${styles.newLayer} ${dropTarget === '__new__' ? styles.dropOver : ''}`}>
+            ＋ Drop media here for a new layer
+          </div>
         </div>
       </div>
     </div>

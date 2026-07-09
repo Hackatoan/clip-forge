@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { store } from '../store/editorStore';
 import { useStore } from '../hooks/useStore';
 import { serializeProject, downloadProject, parseProject } from '../engine/project';
+import { importFiles } from '../engine/importMedia';
 import styles from './Panel.module.css';
 
 export default function MediaPanel() {
@@ -40,31 +41,7 @@ export default function MediaPanel() {
     fr.readAsText(file);
   };
 
-  const addMedia = (files) => {
-    Array.from(files).forEach(file => {
-      const src = URL.createObjectURL(file);
-      const isVideo = file.type.startsWith('video');
-      const isAudio = file.type.startsWith('audio');
-      const isImage = file.type.startsWith('image');
-      const type = isVideo ? 'video' : isAudio ? 'audio' : isImage ? 'image' : null;
-      if (!type) return;
-      const trackId = store.addTrack(type);
-      if (isImage) {
-        store.addClip(trackId, { src, name: file.name, duration: 5, fit: 'cover' });
-        return;
-      }
-      store.addClip(trackId, { src, name: file.name, duration: 10, ...(isVideo ? { fit: 'cover' } : {}) });
-      // Get actual duration
-      const el = document.createElement(isVideo ? 'video' : 'audio');
-      el.src = src;
-      el.onloadedmetadata = () => {
-        store.updateClip(
-          store.getState().tracks.find(t => t.id === trackId)?.clips.slice(-1)[0]?.id,
-          { duration: el.duration }, true
-        );
-      };
-    });
-  };
+  const addMedia = (files) => importFiles(files);
 
   const addText = () => {
     const trackId = store.addTrack('text');

@@ -20,7 +20,8 @@ function createStore() {
     loop: false,
     snap: true,          // edge snapping while dragging clips
     zoom: 60,            // pixels per second
-    selectedClipId: null,
+    selectedClipId: null,      // primary selection (shown in Properties)
+    selectedClipIds: [],       // full multi-selection
     selectedTrackId: null,
     ffmpegReady: false,
     exportProgress: null,
@@ -61,6 +62,10 @@ function createStore() {
 
   function setState(patch) {
     state = { ...state, ...patch };
+    // Keep the multi-selection in sync when only the primary is set.
+    if ('selectedClipId' in patch && !('selectedClipIds' in patch)) {
+      state.selectedClipIds = patch.selectedClipId ? [patch.selectedClipId] : [];
+    }
     if (patch.tracks) {
       const needed = Math.max(10, Math.ceil(contentEnd(patch.tracks)) + 2);
       if (needed !== state.duration) state.duration = needed;
@@ -317,7 +322,48 @@ function createStore() {
         selectedTrackId: null,
       });
     },
-    select(trackId, clipId) { setState({ selectedTrackId: trackId, selectedClipId: clipId }); },
+    select(trackId, clipId) {
+      setState({ selectedTrackId: trackId, selectedClipId: clipId, selectedClipIds: clipId ? [clipId] : [] });
+    },
+    // Set the primary (Properties-shown) clip without collapsing a multi-selection.
+    setPrimary(trackId, clipId) { setState({ selectedTrackId: trackId, selectedClipId: clipId, selectedClipIds: state.selectedClipIds }); },
+    selectAll() {
+      const ids = [];
+      for (const t of state.tracks) for (const c of t.clips) ids.push(c.id);
+      setState({ selectedClipIds: ids, selectedClipId: ids[ids.length - 1] ?? null });
+    },
+    // Shift/Ctrl-click: add/remove a clip from the multi-selection.
+    toggleSelect(trackId, clipId) {
+      const set = new Set(state.selectedClipIds);
+      if (set.has(clipId)) set.delete(clipId); else set.add(clipId);
+      const ids = [...set];
+      setState({ selectedClipIds: ids, selectedClipId: ids[ids.length - 1] ?? null, selectedTrackId: trackId });
+    },
+    removeSelected() {
+      const ids = state.selectedClipIds.length ? state.selectedClipIds : (state.selectedClipId ? [state.selectedClipId] : []);
+      if (!ids.length) return;
+      snapshot(true);
+      const idset = new Set(ids);
+      setState({
+        tracks: state.tracks.map(t => ({ ...t, clips: t.clips.filter(c => !idset.has(c.id)) })),
+        selectedClipId: null, selectedClipIds: [],
+      });
+    },
+    duplicateSelected() {
+      const ids = state.selectedClipIds.length ? state.selectedClipIds : (state.selectedClipId ? [state.selectedClipId] : []);
+      if (!ids.length) return;
+      snapshot(true);
+      const idset = new Set(ids);
+      const newIds = [];
+      const tracks = state.tracks.map(t => {
+        const dups = t.clips.filter(c => idset.has(c.id)).map(c => {
+          const nid = uuidv4(); newIds.push(nid);
+          return { ...structuredClone(c), id: nid, start: c.start + c.duration };
+        });
+        return dups.length ? { ...t, clips: [...t.clips, ...dups] } : t;
+      });
+      setState({ tracks, selectedClipIds: newIds, selectedClipId: newIds[newIds.length - 1] ?? null });
+    },
     setFFmpegReady(v) { setState({ ffmpegReady: v }); },
     setExportProgress(v) { setState({ exportProgress: v }); },
 

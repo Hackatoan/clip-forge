@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Toolbar from './components/Toolbar';
 import Preview from './components/Preview';
 import Timeline from './components/Timeline';
@@ -9,12 +9,15 @@ import ExportModal from './components/ExportModal';
 import ShortcutsModal from './components/ShortcutsModal';
 import { store } from './store/editorStore';
 import { loadFFmpeg, isCrossOriginIsolated } from './engine/ffmpeg';
+import { importFiles } from './engine/importMedia';
 import styles from './App.module.css';
 
 export default function App() {
   const [activePanel, setActivePanel] = useState('media'); // media | properties | features
   const [showExport, setShowExport] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const dragDepth = useRef(0);
 
   // Preload ffmpeg.wasm in the background (only useful if cross-origin isolated).
   useEffect(() => {
@@ -44,11 +47,13 @@ export default function App() {
       } else if (mod && e.key.toLowerCase() === 'v') {
         e.preventDefault(); store.pasteClip();
       } else if (mod && e.key.toLowerCase() === 'd') {
-        if (s.selectedClipId) { e.preventDefault(); store.duplicateClip(s.selectedClipId); }
+        if (s.selectedClipId) { e.preventDefault(); store.duplicateSelected(); }
+      } else if (mod && e.key.toLowerCase() === 'a') {
+        e.preventDefault(); store.selectAll();
       } else if (e.code === 'Space') {
         e.preventDefault(); store.setPlaying(!s.playing);
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (s.selectedClipId) { e.preventDefault(); store.removeClip(s.selectedClipId); }
+        if (s.selectedClipId || s.selectedClipIds.length) { e.preventDefault(); store.removeSelected(); }
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault(); store.setPlayhead(s.playhead - (e.shiftKey ? 1 : 0.1));
       } else if (e.key === 'ArrowRight') {
@@ -65,8 +70,25 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  // App-wide file drag-and-drop (drops on the timeline are handled there and
+  // stop propagation; this catches drops anywhere else and imports at playhead).
+  const isFileDrag = e => e.dataTransfer && [...e.dataTransfer.types].includes('Files');
+  const onDragEnter = e => { if (!isFileDrag(e)) return; e.preventDefault(); dragDepth.current++; setDragging(true); };
+  const onDragOver = e => { if (isFileDrag(e)) e.preventDefault(); };
+  const onDragLeave = e => { if (!isFileDrag(e)) return; if (--dragDepth.current <= 0) { dragDepth.current = 0; setDragging(false); } };
+  const onDrop = e => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault(); dragDepth.current = 0; setDragging(false);
+    if (e.dataTransfer.files?.length) importFiles(e.dataTransfer.files);
+  };
+
   return (
-    <div className={styles.app}>
+    <div className={styles.app} onDragEnter={onDragEnter} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
+      {dragging && (
+        <div className={styles.dropOverlay}>
+          <div className={styles.dropBox}>⬇ Drop media to import<br /><span>onto a timeline track, or anywhere for a new layer</span></div>
+        </div>
+      )}
       <Toolbar onPanel={setActivePanel} activePanel={activePanel} onExport={() => setShowExport(true)} onHelp={() => setShowHelp(true)} />
       <div className={styles.main}>
         <div className={styles.sidebar}>

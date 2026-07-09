@@ -4,8 +4,11 @@ A browser-based video editor that runs entirely locally — no uploads, no serve
 
 ## Features
 
-- **Multi-track timeline** — video, audio, image, text, shape, and voiceover tracks
-- **Trim, move, split & snap** — drag clips, trim edges, split at the playhead, edges snap to neighbours
+- **Multi-track timeline** — video, audio, image, text, shape, and voiceover layers
+- **Drag & drop import** — drop files straight onto a layer at the exact time, or onto empty space for a new layer
+- **Multi-select** — Shift/Ctrl-click clips (or Ctrl+A) to move, duplicate, or delete several at once
+- **Master meter & volume** — live output level meter with a master volume control
+- **Trim, move, split & snap** — drag clips, trim edges, split at the playhead, snapping toggle (Alt to bypass)
 - **Keyframe animation** — animate opacity, scale, position, rotation & volume over time with eased interpolation; keyframe markers on the timeline
 - **Undo / redo** with full history
 - **Copy · paste · duplicate** clips

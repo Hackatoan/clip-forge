@@ -1,5 +1,6 @@
 import { useStore } from '../hooks/useStore';
 import { store } from '../store/editorStore';
+import MasterMeter from './MasterMeter';
 import styles from './Toolbar.module.css';
 
 export default function Toolbar({ onPanel, activePanel, onExport, onHelp }) {
@@ -45,6 +46,7 @@ export default function Toolbar({ onPanel, activePanel, onExport, onHelp }) {
       </div>
 
       <div className={styles.right}>
+        <MasterMeter />
         <button className={styles.tBtn} onClick={onHelp} title="Keyboard shortcuts (?)" style={{ marginRight: 8 }}>⌨</button>
         <select className={styles.aspect} value={aspect} title="Aspect ratio"
           onChange={e => store.setAspect(e.target.value)}>

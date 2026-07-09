@@ -20,6 +20,14 @@ class MediaEngine {
       const AC = window.AudioContext || window.webkitAudioContext;
       this.ctx = new AC();
       this.recordDest = this.ctx.createMediaStreamDestination();
+      // Master bus: every clip gain routes here, then out to speakers + the
+      // export stream + an analyser for the level meter.
+      this.masterGain = this.ctx.createGain();
+      this.analyser = this.ctx.createAnalyser();
+      this.analyser.fftSize = 512;
+      this.masterGain.connect(this.ctx.destination);
+      this.masterGain.connect(this.recordDest);
+      this.masterGain.connect(this.analyser);
       // Keep-alive silent source: without a continuously-emitting source, the
       // record destination's audio track stalls the MediaRecorder muxer during
       // silent gaps (produces a 0-byte file). A zero-gain ConstantSource keeps
@@ -28,12 +36,15 @@ class MediaEngine {
       const g = this.ctx.createGain();
       g.gain.value = 0;
       silent.connect(g);
-      g.connect(this.recordDest);
+      g.connect(this.masterGain);
       silent.start();
     }
     if (this.ctx.state === 'suspended') this.ctx.resume();
     return this.ctx;
   }
+
+  setMasterVolume(v) { this.ensureContext(); this.masterGain.gain.value = v; }
+  getAnalyser() { this.ensureContext(); return this.analyser; }
 
   // Create/destroy media elements to match the current clip list.
   sync(tracks) {
@@ -91,8 +102,7 @@ class MediaEngine {
       entry.source = this.ctx.createMediaElementSource(entry.el);
       entry.gain = this.ctx.createGain();
       entry.source.connect(entry.gain);
-      entry.gain.connect(this.ctx.destination);
-      if (this.recordDest) entry.gain.connect(this.recordDest);
+      entry.gain.connect(this.masterGain);
     } catch {
       // createMediaElementSource throws if called twice; ignore.
     }

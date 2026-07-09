@@ -51,6 +51,21 @@
 .pActive { background: var(--bg-surface2) !important; color: var(--text) !important; border-color: var(--border) !important; }
 
 .right { margin-left: auto; display: flex; align-items: center; }
+
+.meter { display: flex; flex-direction: column; gap: 2px; margin-right: 10px; width: 90px; }
+.meterBar {
+  height: 6px; width: 100%;
+  background: var(--bg-surface2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.meterFill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, #5cbf7c 0%, #5cbf7c 60%, #f0c040 80%, #ff4b3a 100%);
+  transition: width 0.05s linear;
+}
+.meterVol { width: 100%; height: 10px; }
 .exportBtn {
   background: var(--primary);
   color: #fff;

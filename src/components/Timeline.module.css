@@ -127,6 +127,20 @@
   background: var(--bg-surface2);
 }
 
+.dropOver { outline: 2px dashed var(--primary-glow); outline-offset: -2px; background: rgba(255,138,74,0.08); }
+
+.newLayer {
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  font-size: 0.72rem;
+  border: 1px dashed var(--border);
+  margin: 6px 8px;
+  border-radius: 5px;
+}
+
 .clip {
   position: absolute;
   top: 4px;
@@ -167,6 +181,7 @@
 }
 
 .selected { box-shadow: 0 0 0 2px var(--primary) !important; }
+.primary { box-shadow: 0 0 0 2px var(--primary), 0 0 0 4px var(--primary-glow) !important; }
 
 .kfMark {
   position: absolute;
