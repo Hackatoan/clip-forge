@@ -7,7 +7,11 @@ import MediaPanel from './components/MediaPanel';
 import FeatureRequest from './components/FeatureRequest';
 import ExportModal from './components/ExportModal';
 import ShortcutsModal from './components/ShortcutsModal';
+import SettingsModal from './components/SettingsModal';
+import ContextMenu from './components/ContextMenu';
 import { store } from './store/editorStore';
+import { uiStore } from './store/uiStore';
+import { useUi } from './hooks/useUi';
 import { loadFFmpeg, isCrossOriginIsolated } from './engine/ffmpeg';
 import { importFiles, filesFromDataTransfer } from './engine/importMedia';
 import styles from './App.module.css';
@@ -16,8 +20,29 @@ export default function App() {
   const [activePanel, setActivePanel] = useState('media'); // media | properties | features
   const [showExport, setShowExport] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [dragging, setDragging] = useState(false);
   const dragDepth = useRef(0);
+  const ui = useUi();
+
+  // Drag a panel divider to resize the sidebar (v) or timeline (h).
+  const startResize = (axis) => (e) => {
+    e.preventDefault();
+    const s0 = uiStore.getState();
+    const startX = e.clientX, startY = e.clientY;
+    const move = ev => {
+      if (axis === 'v') {
+        let dx = ev.clientX - startX;
+        if (s0.sidebarPos === 'right') dx = -dx;
+        uiStore.set({ sidebarWidth: uiStore.clamp(s0.sidebarWidth + dx, 180, 560) });
+      } else {
+        uiStore.set({ timelineHeight: uiStore.clamp(s0.timelineHeight - (ev.clientY - startY), 120, 560) });
+      }
+    };
+    const up = () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+  };
 
   // Preload ffmpeg.wasm in the background (only useful if cross-origin isolated).
   useEffect(() => {
@@ -92,20 +117,25 @@ export default function App() {
           <div className={styles.dropBox}>⬇ Drop media to import<br /><span>onto a timeline track, or anywhere for a new layer</span></div>
         </div>
       )}
-      <Toolbar onPanel={setActivePanel} activePanel={activePanel} onExport={() => setShowExport(true)} onHelp={() => setShowHelp(true)} />
-      <div className={styles.main}>
+      <Toolbar onPanel={setActivePanel} activePanel={activePanel}
+        onExport={() => setShowExport(true)} onHelp={() => setShowHelp(true)} onSettings={() => setShowSettings(true)} />
+      <div className={styles.main} style={{ flexDirection: ui.sidebarPos === 'right' ? 'row-reverse' : 'row' }}>
         <div className={styles.sidebar}>
           {activePanel === 'media'      && <MediaPanel />}
           {activePanel === 'properties' && <PropertiesPanel />}
           {activePanel === 'features'   && <FeatureRequest />}
         </div>
+        <div className={styles.resizeV} onMouseDown={startResize('v')} title="Drag to resize panel" />
         <div className={styles.center}>
           <Preview />
+          <div className={styles.resizeH} onMouseDown={startResize('h')} title="Drag to resize timeline" />
           <Timeline />
         </div>
       </div>
       {showExport && <ExportModal onClose={() => setShowExport(false)} />}
       {showHelp && <ShortcutsModal onClose={() => setShowHelp(false)} />}
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+      <ContextMenu />
     </div>
   );
 }

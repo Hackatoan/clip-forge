@@ -2,7 +2,8 @@ import { useRef, useEffect } from 'react';
 import { useStore } from '../hooks/useStore';
 import { store } from '../store/editorStore';
 import { mediaEngine } from '../engine/mediaEngine';
-import { renderFrame } from '../engine/render';
+import { renderFrame, captureFrame } from '../engine/render';
+import { menuStore } from '../store/menuStore';
 import styles from './Preview.module.css';
 
 export default function Preview() {
@@ -87,8 +88,24 @@ export default function Preview() {
 
   const empty = tracks.length === 0;
 
+  const onMenu = e => {
+    e.preventDefault();
+    const s = store.getState();
+    menuStore.open(e.clientX, e.clientY, [
+      { label: s.playing ? 'Pause' : 'Play', shortcut: 'Space', onClick: () => store.setPlaying(!s.playing) },
+      { label: 'Freeze this frame', onClick: () => {
+        const url = captureFrame(s.tracks, s.canvasW, s.canvasH, s.playhead);
+        const tid = store.addTrack('image');
+        store.addClip(tid, { src: url, name: 'Freeze frame', duration: 2, start: s.playhead, fit: 'cover' });
+      } },
+      { divider: true },
+      { label: 'Jump to start', shortcut: 'Home', onClick: () => store.setPlayhead(0) },
+      { label: 'Jump to end', shortcut: 'End', onClick: () => store.setPlayhead(s.duration) },
+    ]);
+  };
+
   return (
-    <div className={styles.preview}>
+    <div className={styles.preview} onContextMenu={onMenu}>
       <div className={styles.stage} style={{ aspectRatio: `${canvasW} / ${canvasH}` }}>
         <canvas ref={canvasRef} width={canvasW} height={canvasH} className={styles.canvas} />
         {empty && (

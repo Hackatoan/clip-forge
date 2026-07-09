@@ -3,7 +3,7 @@ import { store } from '../store/editorStore';
 import MasterMeter from './MasterMeter';
 import styles from './Toolbar.module.css';
 
-export default function Toolbar({ onPanel, activePanel, onExport, onHelp }) {
+export default function Toolbar({ onPanel, activePanel, onExport, onHelp, onSettings }) {
   const { playing, ffmpegReady, loop, canUndo, canRedo, aspect } = useStore(s => s);
 
   const play = () => store.setPlaying(true);
@@ -47,7 +47,8 @@ export default function Toolbar({ onPanel, activePanel, onExport, onHelp }) {
 
       <div className={styles.right}>
         <MasterMeter />
-        <button className={styles.tBtn} onClick={onHelp} title="Keyboard shortcuts (?)" style={{ marginRight: 8 }}>⌨</button>
+        <button className={styles.tBtn} onClick={onHelp} title="Keyboard shortcuts (?)">⌨</button>
+        <button className={styles.tBtn} onClick={onSettings} title="Settings" style={{ marginRight: 8 }}>⚙</button>
         <select className={styles.aspect} value={aspect} title="Aspect ratio"
           onChange={e => store.setAspect(e.target.value)}>
           {Object.keys(store.ASPECTS).map(a => <option key={a} value={a}>{a}</option>)}

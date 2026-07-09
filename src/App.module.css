@@ -53,3 +53,21 @@
   overflow: hidden;
   min-width: 0;
 }
+
+.resizeV {
+  width: 5px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: transparent;
+  transition: background 0.12s;
+}
+.resizeV:hover { background: var(--primary); }
+
+.resizeH {
+  height: 5px;
+  flex-shrink: 0;
+  cursor: row-resize;
+  background: transparent;
+  transition: background 0.12s;
+}
+.resizeH:hover { background: var(--primary); }

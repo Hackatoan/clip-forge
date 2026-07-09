@@ -3,6 +3,8 @@ import { useStore } from '../hooks/useStore';
 import { store } from '../store/editorStore';
 import { ensureWaveform, ensurePoster } from '../engine/mediaThumbs';
 import { importFiles, filesFromDataTransfer } from '../engine/importMedia';
+import { reverseAudio } from '../engine/audioReverse';
+import { menuStore } from '../store/menuStore';
 import styles from './Timeline.module.css';
 
 export default function Timeline() {
@@ -165,6 +167,49 @@ export default function Timeline() {
 
   const onMouseUp = () => setDragging(null);
 
+  // Right-click menus ------------------------------------------------------
+  const reverseClip = async (clip, track) => {
+    if (track.type === 'video') { store.updateClip(clip.id, { reversed: !clip.reversed }); return; }
+    try {
+      const url = await reverseAudio(clip.src);
+      store.updateClip(clip.id, { src: url, wave: null, reversed: !clip.reversed });
+    } catch { /* ignore */ }
+  };
+
+  const openClipMenu = (e, clip, track) => {
+    e.preventDefault(); e.stopPropagation();
+    store.select(track.id, clip.id);
+    const ph = store.getState().playhead;
+    const canSplit = ph > clip.start && ph < clip.start + clip.duration;
+    const canReverse = ['video', 'audio', 'voiceover'].includes(track.type);
+    menuStore.open(e.clientX, e.clientY, [
+      { label: 'Split at playhead', shortcut: '⇥', disabled: !canSplit, onClick: () => store.splitClip(clip.id, ph) },
+      { label: 'Duplicate', shortcut: 'Ctrl+D', onClick: () => store.duplicateSelected() },
+      { label: 'Copy', shortcut: 'Ctrl+C', onClick: () => store.copyClip(clip.id) },
+      { label: 'Crossfade with previous', onClick: () => store.crossfadePrev(clip.id, clip.transInDur ?? 0.5) },
+      ...(canReverse ? [{ label: clip.reversed ? 'Un-reverse' : 'Reverse', onClick: () => reverseClip(clip, track) }] : []),
+      { label: clip.locked ? 'Unlock' : 'Lock', onClick: () => store.updateClip(clip.id, { locked: !clip.locked }) },
+      { divider: true },
+      { label: 'Delete', danger: true, shortcut: 'Del', onClick: () => store.removeSelected() },
+    ]);
+  };
+
+  const openBgMenu = (e) => {
+    e.preventDefault();
+    const rect = areaRef.current.getBoundingClientRect();
+    const t = Math.max(0, toT(e.clientX - rect.left + areaRef.current.scrollLeft));
+    const hasClipboard = !!store.getState().clipboard;
+    menuStore.open(e.clientX, e.clientY, [
+      { label: `Add marker @ ${fmt(t)}`, onClick: () => store.addMarker(t) },
+      { label: 'Paste here', shortcut: 'Ctrl+V', disabled: !hasClipboard, onClick: () => { store.setPlayhead(t); store.pasteClip(); } },
+      { divider: true },
+      { label: 'Add video layer', onClick: () => store.addTrack('video') },
+      { label: 'Add audio layer', onClick: () => store.addTrack('audio') },
+      { label: 'Add text layer', onClick: () => store.addTrack('text') },
+      { label: 'Add shape layer', onClick: () => store.addTrack('shape') },
+    ]);
+  };
+
   const trackColors = {
     video: '#ff4b3a', audio: '#f472b6', text: '#ff8a4a',
     shape: '#a78bfa', voiceover: '#34d399', image: '#38bdf8',
@@ -230,6 +275,7 @@ export default function Timeline() {
         {/* Scrollable canvas area */}
         <div className={styles.canvasArea} ref={areaRef}
           onDragOver={onAreaDragOver} onDrop={onAreaDrop}
+          onContextMenu={openBgMenu}
           onDragLeave={e => { if (e.currentTarget === e.target) setDropTarget(null); }}>
           {/* Ruler */}
           <div className={styles.ruler} ref={rulerRef}
@@ -280,7 +326,8 @@ export default function Timeline() {
                   }}
                   onMouseDown={e => onClipMouseDown(e, clip, track.id, 'move')}
                   onDoubleClick={() => store.splitClip(clip.id, playhead)}
-                  title="Drag to move · Edges to trim · Double-click to split at playhead"
+                  onContextMenu={e => openClipMenu(e, clip, track)}
+                  title="Drag to move · Edges to trim · Double-click to split · Right-click for menu"
                 >
                   <div className={styles.trimHandle} data-side="l"
                     onMouseDown={e => onClipMouseDown(e, clip, track.id, 'trim-left')} />
