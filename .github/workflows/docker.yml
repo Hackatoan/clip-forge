@@ -27,13 +27,8 @@ jobs:
           push: true
           tags: ghcr.io/hackatoan/clip-forge:latest
 
-      - name: Deploy to homelab
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: root
-          password: ${{ secrets.DEPLOY_PASSWORD }}
-          script: |
-            docker pull ghcr.io/hackatoan/clip-forge:latest
-            cd /opt/homelab/clip-forge
-            docker compose up -d
+      # NOTE: no cloud "deploy" step — the homelab host isn't reachable from
+      # GitHub's runners (private LAN behind the router). Deployment happens on
+      # the host itself: `cd /opt/homelab/clip-forge && git pull && docker
+      # compose up -d --build`. This workflow just validates the build and
+      # publishes ghcr.io/hackatoan/clip-forge:latest.
