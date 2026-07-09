@@ -20,7 +20,7 @@ export default function Preview() {
   const draw = (ph) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
     renderFrame(ctx, canvas.width, canvas.height, tracks, ph);
   };
 

@@ -9,7 +9,7 @@ import ExportModal from './components/ExportModal';
 import ShortcutsModal from './components/ShortcutsModal';
 import { store } from './store/editorStore';
 import { loadFFmpeg, isCrossOriginIsolated } from './engine/ffmpeg';
-import { importFiles } from './engine/importMedia';
+import { importFiles, filesFromDataTransfer } from './engine/importMedia';
 import styles from './App.module.css';
 
 export default function App() {
@@ -76,10 +76,11 @@ export default function App() {
   const onDragEnter = e => { if (!isFileDrag(e)) return; e.preventDefault(); dragDepth.current++; setDragging(true); };
   const onDragOver = e => { if (isFileDrag(e)) e.preventDefault(); };
   const onDragLeave = e => { if (!isFileDrag(e)) return; if (--dragDepth.current <= 0) { dragDepth.current = 0; setDragging(false); } };
-  const onDrop = e => {
+  const onDrop = async e => {
     if (!isFileDrag(e)) return;
     e.preventDefault(); dragDepth.current = 0; setDragging(false);
-    if (e.dataTransfer.files?.length) importFiles(e.dataTransfer.files);
+    const files = await filesFromDataTransfer(e.dataTransfer);
+    if (files.length) importFiles(files, { groupByType: true });
   };
 
   return (

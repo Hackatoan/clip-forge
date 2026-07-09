@@ -7,6 +7,7 @@ import styles from './Panel.module.css';
 
 export default function MediaPanel() {
   const fileRef = useRef(null);
+  const folderRef = useRef(null);
   const projRef = useRef(null);
   const micRef = useRef(null);
   const recordRef = useRef(null);
@@ -40,8 +41,6 @@ export default function MediaPanel() {
     };
     fr.readAsText(file);
   };
-
-  const addMedia = (files) => importFiles(files);
 
   const addText = () => {
     const trackId = store.addTrack('text');
@@ -81,9 +80,14 @@ export default function MediaPanel() {
       <div className={styles.section}>
         <div className={styles.sectionTitle}>Import Media</div>
         <input ref={fileRef} type="file" multiple accept="video/*,audio/*,image/*" style={{ display: 'none' }}
-          onChange={e => addMedia(e.target.files)} />
+          onChange={e => { importFiles(e.target.files, { groupByType: true }); e.target.value = ''; }} />
+        <input ref={folderRef} type="file" webkitdirectory="" directory="" multiple style={{ display: 'none' }}
+          onChange={e => { importFiles(e.target.files, { groupByType: true }); e.target.value = ''; }} />
         <button className={styles.primaryBtn} onClick={() => fileRef.current.click()}>
           📂 Add Video / Audio / Image
+        </button>
+        <button className={styles.secondaryBtn} style={{ marginTop: 6 }} onClick={() => folderRef.current.click()}>
+          🗂 Import Folder
         </button>
       </div>
 

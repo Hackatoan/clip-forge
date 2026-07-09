@@ -2,7 +2,7 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import { useStore } from '../hooks/useStore';
 import { store } from '../store/editorStore';
 import { ensureWaveform, ensurePoster } from '../engine/mediaThumbs';
-import { importFiles } from '../engine/importMedia';
+import { importFiles, filesFromDataTransfer } from '../engine/importMedia';
 import styles from './Timeline.module.css';
 
 export default function Timeline() {
@@ -78,12 +78,13 @@ export default function Timeline() {
     e.preventDefault(); e.stopPropagation();
     setDropTarget(trackId);
   };
-  const onTrackDrop = (e, track) => {
+  const onTrackDrop = async (e, track) => {
     if (!isFileDrag(e)) return;
     e.preventDefault(); e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
     const startTime = Math.max(0, snap(toT(e.clientX - rect.left), null, e.altKey));
-    importFiles(e.dataTransfer.files, { trackId: track.id, startTime });
+    const files = await filesFromDataTransfer(e.dataTransfer);
+    importFiles(files, { trackId: track.id, startTime, groupByType: true });
     setDropTarget(null);
   };
   const onAreaDragOver = e => {
@@ -91,12 +92,14 @@ export default function Timeline() {
     e.preventDefault(); e.stopPropagation();
     if (!dropTarget) setDropTarget('__new__');
   };
-  const onAreaDrop = e => {
+  const onAreaDrop = async e => {
     if (!isFileDrag(e)) return;
     e.preventDefault(); e.stopPropagation();
     const rect = areaRef.current.getBoundingClientRect();
-    const startTime = Math.max(0, toT(e.clientX - rect.left + areaRef.current.scrollLeft));
-    importFiles(e.dataTransfer.files, { startTime });
+    const scrollLeft = areaRef.current.scrollLeft;
+    const startTime = Math.max(0, toT(e.clientX - rect.left + scrollLeft));
+    const files = await filesFromDataTransfer(e.dataTransfer);
+    importFiles(files, { startTime, groupByType: true });
     setDropTarget(null);
   };
 

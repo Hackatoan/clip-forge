@@ -5,7 +5,9 @@ A browser-based video editor that runs entirely locally — no uploads, no serve
 ## Features
 
 - **Multi-track timeline** — video, audio, image, text, shape, and voiceover layers
-- **Drag & drop import** — drop files straight onto a layer at the exact time, or onto empty space for a new layer
+- **Drag & drop import** — drop files (or whole folders) straight onto a layer at the exact time, or onto empty space for a new layer
+- **Folder import** — bring in an entire folder; files group onto shared layers by type
+- **GPU-accelerated chroma key** — WebGL keying with per-clip frame caching (CPU fallback)
 - **Multi-select** — Shift/Ctrl-click clips (or Ctrl+A) to move, duplicate, or delete several at once
 - **Master meter & volume** — live output level meter with a master volume control
 - **Trim, move, split & snap** — drag clips, trim edges, split at the playhead, snapping toggle (Alt to bypass)

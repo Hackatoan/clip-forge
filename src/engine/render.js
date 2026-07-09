@@ -3,6 +3,7 @@
 import { mediaEngine } from './mediaEngine';
 import { sample } from './keyframes';
 import { chromaProcess } from './chroma';
+import { chromaProcessGL } from './chromaGL';
 
 const DEFAULT_TRANSITION_DUR = 0.5; // seconds, overridable per clip
 
@@ -89,10 +90,16 @@ function drawMedia(ctx, el, W, H, clip, ts, lt) {
 }
 
 // Apply chroma key if enabled, returning a processed canvas; else the element.
+// Uses the GPU (WebGL) path when available and caches static frames; falls back
+// to the CPU path otherwise.
 function keyed(clip, el, iw, ih) {
   if (!clip.chroma?.enabled || !iw || !ih) return el;
-  const capW = Math.min(iw, 960);
+  const capW = Math.min(iw, 1280);
   const capH = Math.round(capW * ih / iw);
+  // Cache key: video reprocesses when its frame time changes; images stay put.
+  const frameTime = el.currentTime ?? 0;
+  const gpu = chromaProcessGL(clip.id, el, capW, capH, clip.chroma, frameTime);
+  if (gpu) return gpu;
   return chromaProcess(clip.id, el, capW, capH, clip.chroma);
 }
 
@@ -102,7 +109,10 @@ export function renderFrame(ctx, W, H, tracks, ph) {
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, W, H);
 
-  for (const track of tracks) {
+  // Draw bottom-up: the LAST track in the list is the lowest layer, so iterate
+  // in reverse — the top track in the timeline becomes the top visual layer.
+  for (let ti = tracks.length - 1; ti >= 0; ti--) {
+    const track = tracks[ti];
     // Sort by start so overlapping clips composite in temporal order
     // (a later-starting clip draws on top — needed for cross-clip fades).
     const ordered = [...track.clips].sort((a, b) => a.start - b.start);
