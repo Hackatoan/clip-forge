@@ -40,6 +40,30 @@ function transitionState(clip, localTime) {
   return st;
 }
 
+// Fade-to-black / fade-to-white are full-frame overlays, not per-clip alpha.
+// Returns the strongest black & white overlay alphas active at time `ph`.
+function frameOverlay(tracks, ph) {
+  let black = 0, white = 0;
+  for (const track of tracks) {
+    for (const clip of track.clips) {
+      if (ph < clip.start || ph > clip.start + clip.duration) continue;
+      const lt = ph - clip.start;
+      const dIn = clip.transInDur || DEFAULT_TRANSITION_DUR;
+      const dOut = clip.transOutDur || DEFAULT_TRANSITION_DUR;
+      const legacy = clip.transition && clip.transition !== 'none' ? clip.transition : null;
+      const tin = clip.transitionIn || legacy || 'none';
+      const tout = clip.transitionOut || legacy || 'none';
+      const add = (kind, a) => {
+        if (kind === 'fade-black') black = Math.max(black, a);
+        else if (kind === 'fade-white') white = Math.max(white, a);
+      };
+      if ((tin === 'fade-black' || tin === 'fade-white') && lt < dIn) add(tin, 1 - lt / dIn);
+      if ((tout === 'fade-black' || tout === 'fade-white') && lt > clip.duration - dOut) add(tout, 1 - (clip.duration - lt) / dOut);
+    }
+  }
+  return { black, white };
+}
+
 const BLEND = {
   normal: 'source-over', multiply: 'multiply', screen: 'screen',
   overlay: 'overlay', lighten: 'lighten', darken: 'darken', add: 'lighter',
@@ -101,6 +125,14 @@ function keyed(clip, el, iw, ih) {
   const gpu = chromaProcessGL(clip.id, el, capW, capH, clip.chroma, frameTime);
   if (gpu) return gpu;
   return chromaProcess(clip.id, el, capW, capH, clip.chroma);
+}
+
+// Capture the composited frame at `ph` as a PNG data URL (freeze frame).
+export function captureFrame(tracks, W, H, ph) {
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  renderFrame(c.getContext('2d'), W, H, tracks, ph);
+  return c.toDataURL('image/png');
 }
 
 // Draw one full frame of the timeline at time `ph` onto ctx (W x H).
@@ -185,4 +217,9 @@ export function renderFrame(ctx, W, H, tracks, ph) {
       ctx.restore();
     }
   }
+
+  // Full-frame fade-to-black / fade-to-white overlays.
+  const { black, white } = frameOverlay(tracks, ph);
+  if (black > 0) { ctx.save(); ctx.globalAlpha = Math.min(1, black); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H); ctx.restore(); }
+  if (white > 0) { ctx.save(); ctx.globalAlpha = Math.min(1, white); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.restore(); }
 }

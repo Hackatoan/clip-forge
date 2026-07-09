@@ -62,6 +62,8 @@ export default function App() {
         e.preventDefault(); store.setPlayhead(0);
       } else if (e.key === 'End') {
         e.preventDefault(); store.setPlayhead(s.duration);
+      } else if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault(); store.addMarker();
       } else if (e.key === '?') {
         e.preventDefault(); setShowHelp(v => !v);
       }

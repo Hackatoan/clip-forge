@@ -24,8 +24,12 @@ A browser-based video editor that runs entirely locally — no uploads, no serve
 - **Chroma key** — green/blue-screen removal with adjustable similarity & edge softness
 - **Timeline previews** — poster thumbnails on video/image clips, waveforms on audio clips
 - **Track reordering** — move tracks up/down to control layer order
-- **Audio fades** — per-clip fade in / fade out, volume, mute
-- **Transitions** — separate in / out (fade, zoom, slide 4-dir) with adjustable durations, plus one-click **cross-clip crossfades** between adjacent clips
+- **Audio fades & ducking** — per-clip fade in / fade out, volume, mute, and auto-ducking (lower other tracks under a voiceover)
+- **Reverse** — play clips backwards (true reversed audio, seeked video)
+- **Freeze frame** — drop a still of the current frame
+- **Ken Burns** — one-click pan & zoom on photos/video
+- **Timeline markers** — drop markers (M) and click to jump
+- **Transitions** — separate in / out (fade, fade-to-black, fade-to-white, zoom, slide 4-dir) with adjustable durations, plus one-click **cross-clip crossfades** between adjacent clips
 - **Voiceover recording** straight from your mic
 - **Live canvas preview** with real audio playback + loop
 - **Text & shape overlays** — fonts, bold/italic, colours, alignment, background, stroke; rectangles, circles, triangles

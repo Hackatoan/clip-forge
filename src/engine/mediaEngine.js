@@ -13,6 +13,21 @@ class MediaEngine {
     this.entries = new Map();        // clipId -> { el, source, gain, ready }
     this.images = new Map();         // clipId -> HTMLImageElement
     this.playing = false;
+    this.duckLevel = 0.35;           // how far ducked tracks drop (35%)
+    this._duckActive = false;
+  }
+
+  // Ducking is active when any track flagged `duck` has a clip under the playhead.
+  _computeDuck(playhead, tracks) {
+    let active = false;
+    for (const t of tracks) {
+      if (!t.duck) continue;
+      for (const c of t.clips) {
+        if (playhead >= c.start && playhead <= c.start + c.duration) { active = true; break; }
+      }
+      if (active) break;
+    }
+    this._duckActive = active;
   }
 
   ensureContext() {
@@ -118,17 +133,22 @@ class MediaEngine {
     const tClip = playhead - clip.start;
     if (clip.fadeIn && tClip < clip.fadeIn) g *= Math.max(0, tClip / clip.fadeIn);
     if (clip.fadeOut && tClip > clip.duration - clip.fadeOut) g *= Math.max(0, (clip.duration - tClip) / clip.fadeOut);
+    // Auto-ducking: lower non-source tracks while a duck source is playing.
+    if (this._duckActive && !track.duck) g *= this.duckLevel;
     return Math.max(0, Math.min(1, g));
   }
 
-  // Source time within a clip, accounting for playback speed.
+  // Source time within a clip, accounting for playback speed and reverse.
   _localTime(clip, playhead) {
     const speed = clip.speed || 1;
-    return (playhead - clip.start) * speed + (clip.offset || 0);
+    const used = (playhead - clip.start) * speed;
+    if (clip.reversed) return (clip.offset || 0) + clip.duration * speed - used;
+    return used + (clip.offset || 0);
   }
 
   // Update gains + seek every element to match playhead. Used when paused/scrubbing.
   seek(playhead, tracks) {
+    this._computeDuck(playhead, tracks);
     for (const track of tracks) {
       for (const clip of track.clips) {
         const entry = this.entries.get(clip.id);
@@ -151,6 +171,7 @@ class MediaEngine {
   play(playhead, tracks) {
     this.ensureContext();
     this.playing = true;
+    this._computeDuck(playhead, tracks);
     for (const track of tracks) {
       for (const clip of track.clips) {
         const entry = this.entries.get(clip.id);
@@ -163,8 +184,8 @@ class MediaEngine {
         if (active && entry.ready) {
           try {
             entry.el.currentTime = Math.max(0, localTime);
-            const p = entry.el.play();
-            if (p && p.catch) p.catch(() => {});
+            // Reversed clips can't play() backwards — they're seeked per frame.
+            if (!clip.reversed) { const p = entry.el.play(); if (p && p.catch) p.catch(() => {}); }
           } catch { /* noop */ }
         }
       }
@@ -182,6 +203,7 @@ class MediaEngine {
   // enter/leave the playhead window and keep drift in check.
   tick(playhead, tracks) {
     if (!this.playing) return;
+    this._computeDuck(playhead, tracks);
     for (const track of tracks) {
       for (const clip of track.clips) {
         const entry = this.entries.get(clip.id);
@@ -191,7 +213,11 @@ class MediaEngine {
         if (entry.gain) entry.gain.gain.value = this._effectiveGain(clip, track, playhead);
         entry.el.playbackRate = clip.speed || 1;
         if (active) {
-          if (entry.el.paused) {
+          if (clip.reversed) {
+            // Reversed video: seek per frame instead of playing.
+            if (!entry.el.paused) { try { entry.el.pause(); } catch { /* noop */ } }
+            try { entry.el.currentTime = Math.max(0, localTime); } catch { /* noop */ }
+          } else if (entry.el.paused) {
             try { entry.el.currentTime = Math.max(0, localTime); } catch { /* noop */ }
             const p = entry.el.play();
             if (p && p.catch) p.catch(() => {});

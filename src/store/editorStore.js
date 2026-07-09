@@ -28,6 +28,7 @@ function createStore() {
     canvasW: 1280,
     canvasH: 720,
     aspect: '16:9',
+    markers: [],         // [{ id, t }]
     clipboard: null,     // a copied clip payload
     canUndo: false,
     canRedo: false,
@@ -240,6 +241,27 @@ function createStore() {
       });
     },
 
+    // Ken Burns pan/zoom preset: two scale + position keyframes across the clip.
+    kenBurns(clipId, mode = 'in') {
+      snapshot(true);
+      const inZoom = mode === 'in';
+      const s0 = inZoom ? 1.0 : 1.3, s1 = inZoom ? 1.3 : 1.0;
+      const x0 = 0.5, x1 = inZoom ? 0.56 : 0.44;
+      setState({
+        tracks: state.tracks.map(t => ({
+          ...t,
+          clips: t.clips.map(c => {
+            if (c.id !== clipId) return c;
+            const dur = c.duration;
+            const kf = { ...(c.keyframes || {}) };
+            kf.scale = [{ t: 0, v: s0, ease: 'in-out' }, { t: dur, v: s1, ease: 'in-out' }];
+            kf.x = [{ t: 0, v: x0, ease: 'in-out' }, { t: dur, v: x1, ease: 'in-out' }];
+            return { ...c, keyframes: kf, scale: s0, x: x0 };
+          }),
+        })),
+      });
+    },
+
     clearKeyframes(clipId, prop) {
       snapshot(true);
       setState({
@@ -307,6 +329,14 @@ function createStore() {
       setState({ aspect: key, canvasW: a.w, canvasH: a.h });
     },
 
+    // Timeline markers
+    addMarker(t) {
+      const at = t ?? state.playhead;
+      if (state.markers.some(m => Math.abs(m.t - at) < 0.05)) return;
+      setState({ markers: [...state.markers, { id: uuidv4(), t: at }].sort((a, b) => a.t - b.t) });
+    },
+    removeMarker(id) { setState({ markers: state.markers.filter(m => m.id !== id) }); },
+
     // Replace the whole project (from a loaded .clipforge file). Clears history.
     loadProject(proj) {
       past.length = 0; future.length = 0;
@@ -316,6 +346,7 @@ function createStore() {
         aspect: proj.aspect || '16:9',
         canvasW: proj.canvasW || 1280,
         canvasH: proj.canvasH || 720,
+        markers: proj.markers || [],
         playhead: 0,
         playing: false,
         selectedClipId: null,

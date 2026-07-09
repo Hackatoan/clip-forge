@@ -25,6 +25,7 @@ const GROUPS = [
       ['Drag clip', 'Move'],
       ['Drag clip edges', 'Trim'],
       ['Double-click clip', 'Split at playhead'],
+      ['M', 'Add marker at playhead'],
       ['Hold Alt while dragging', 'Bypass snapping'],
     ],
   },

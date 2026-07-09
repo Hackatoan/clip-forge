@@ -6,7 +6,7 @@ import { importFiles, filesFromDataTransfer } from '../engine/importMedia';
 import styles from './Timeline.module.css';
 
 export default function Timeline() {
-  const { tracks, playhead, duration, zoom, selectedClipId, selectedClipIds, snap: snapOn } = useStore(s => s);
+  const { tracks, playhead, duration, zoom, selectedClipId, selectedClipIds, snap: snapOn, markers } = useStore(s => s);
   const rulerRef = useRef(null);
   const areaRef = useRef(null);
   const [dragging, setDragging] = useState(null); // {clipId, mode, startX, orig...}
@@ -183,9 +183,10 @@ export default function Timeline() {
             + {t}
           </button>
         ))}
+        <button className={styles.addBtn} onClick={() => store.addMarker()} title="Add marker at playhead (M)"
+          style={{ marginLeft: 'auto' }}>⚑ Marker</button>
         <button className={`${styles.addBtn} ${snapOn ? styles.snapOn : ''}`}
-          onClick={() => store.setSnap(!snapOn)} title="Toggle snapping (hold Alt to bypass)"
-          style={{ marginLeft: 'auto' }}>🧲 Snap</button>
+          onClick={() => store.setSnap(!snapOn)} title="Toggle snapping (hold Alt to bypass)">🧲 Snap</button>
         <button className={styles.addBtn} onClick={zoomToFit} title="Zoom to fit">⤢ Fit</button>
         <div className={styles.zoom}>
           <span>Zoom</span>
@@ -211,9 +212,14 @@ export default function Timeline() {
                   onClick={() => store.updateTrack(track.id, { muted: !track.muted })}
                   title="Mute">M</button>
                 {(track.type === 'audio' || track.type === 'voiceover') && (
+                  <button className={`${styles.iconBtn} ${track.duck ? styles.muted : ''}`}
+                    onClick={() => store.updateTrack(track.id, { duck: !track.duck })}
+                    title="Duck other tracks while this one plays">D</button>
+                )}
+                {(track.type === 'audio' || track.type === 'voiceover') && (
                   <input type="range" min="0" max="1" step="0.05" value={track.volume ?? 1}
                     onChange={e => store.updateTrack(track.id, { volume: +e.target.value })}
-                    title="Volume" style={{ width: 40 }} />
+                    title="Volume" style={{ width: 34 }} />
                 )}
                 <button className={styles.iconBtn} onClick={() => store.removeTrack(track.id)} title="Delete">✕</button>
               </div>
@@ -233,6 +239,14 @@ export default function Timeline() {
               <div key={i} className={styles.tick} style={{ left: toX(i) }}>
                 <span>{fmt(i)}</span>
               </div>
+            ))}
+            {markers.map(m => (
+              <div key={m.id} className={styles.marker} style={{ left: toX(m.t) }}
+                title={`Marker @ ${fmt(m.t)} — click to seek, Alt-click to delete`}
+                onMouseDown={e => {
+                  e.stopPropagation();
+                  if (e.altKey) store.removeMarker(m.id); else store.setPlayhead(m.t);
+                }} />
             ))}
           </div>
 

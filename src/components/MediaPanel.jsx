@@ -3,6 +3,7 @@ import { store } from '../store/editorStore';
 import { useStore } from '../hooks/useStore';
 import { serializeProject, downloadProject, parseProject } from '../engine/project';
 import { importFiles } from '../engine/importMedia';
+import { captureFrame } from '../engine/render';
 import styles from './Panel.module.css';
 
 export default function MediaPanel() {
@@ -52,6 +53,13 @@ export default function MediaPanel() {
     store.addClip(trackId, { shape, duration: 5, x: 0.5, y: 0.5, w: 0.2, h: 0.1, color: '#ff4b3a', opacity: 0.8 });
   };
 
+  const freezeFrame = () => {
+    const s = store.getState();
+    const url = captureFrame(s.tracks, s.canvasW, s.canvasH, s.playhead);
+    const trackId = store.addTrack('image');
+    store.addClip(trackId, { src: url, name: 'Freeze frame', duration: 2, start: s.playhead, fit: 'cover' });
+  };
+
   // Voiceover recording
   const startRecording = async () => {
     try {
@@ -98,6 +106,7 @@ export default function MediaPanel() {
           <button className={styles.elemBtn} onClick={() => addShape('rect')}>▭ Rectangle</button>
           <button className={styles.elemBtn} onClick={() => addShape('circle')}>◯ Circle</button>
           <button ref={micRef} className={styles.elemBtn} onClick={startRecording}>🎙 Voiceover</button>
+          <button className={styles.elemBtn} onClick={freezeFrame} title="Add a still of the current frame">❄ Freeze frame</button>
         </div>
       </div>
 

@@ -108,6 +108,24 @@
   pointer-events: none;
 }
 
+.marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 2px solid var(--accent);
+  z-index: 5;
+  cursor: pointer;
+}
+.marker::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -4px;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid var(--accent);
+}
+
 .playheadHandle {
   position: absolute;
   top: 0;

@@ -1,9 +1,10 @@
 import { useStore } from '../hooks/useStore';
 import { store } from '../store/editorStore';
 import { hasKeyframes } from '../engine/keyframes';
+import { reverseAudio } from '../engine/audioReverse';
 import styles from './Panel.module.css';
 
-const TRANSITIONS = ['none', 'fade', 'slide-left', 'slide-right', 'slide-up', 'slide-down', 'zoom-in', 'zoom-out'];
+const TRANSITIONS = ['none', 'fade', 'fade-black', 'fade-white', 'slide-left', 'slide-right', 'slide-up', 'slide-down', 'zoom-in', 'zoom-out'];
 const BLENDS = ['normal', 'multiply', 'screen', 'overlay', 'lighten', 'darken', 'add'];
 const FILTER_PRESETS = {
   None:    { brightness: 1, contrast: 1, saturate: 1, blur: 0, grayscale: 0, sepia: 0, hue: 0 },
@@ -49,6 +50,15 @@ export default function PropertiesPanel() {
   );
 
   const upd = patch => store.updateClip(clip.id, patch);
+  const reverse = async () => {
+    if (track.type === 'video') { upd({ reversed: !clip.reversed }); return; }
+    if (track.type === 'audio' || track.type === 'voiceover') {
+      try {
+        const url = await reverseAudio(clip.src);
+        store.updateClip(clip.id, { src: url, wave: null, reversed: !clip.reversed });
+      } catch { /* ignore */ }
+    }
+  };
   const isVisual = track.type === 'video' || track.type === 'image';
   const isAudio = track.type === 'audio' || track.type === 'voiceover';
   const hasSpeed = track.type === 'video' || isAudio;
@@ -93,6 +103,10 @@ export default function PropertiesPanel() {
               <button key={s} className={styles.chip} onClick={() => upd({ speed: s })}>{s}×</button>
             ))}
           </div>
+          <button className={`${styles.secondaryBtn} ${clip.reversed ? styles.chipOn : ''}`} style={{ marginTop: 6 }}
+            onClick={reverse} title="Play this clip backwards">
+            ⏪ Reverse{clip.reversed ? ' (on)' : ''}
+          </button>
         </div>
       )}
 
@@ -138,6 +152,11 @@ export default function PropertiesPanel() {
               onClick={() => upd({ flipH: !clip.flipH })}>⇄ Flip H</button>
             <button className={`${styles.chip} ${clip.flipV ? styles.chipOn : ''}`}
               onClick={() => upd({ flipV: !clip.flipV })}>⇅ Flip V</button>
+          </div>
+          <div className={styles.sectionTitle} style={{ marginTop: 10 }}>Ken Burns</div>
+          <div className={styles.btnRow}>
+            <button className={styles.chip} onClick={() => store.kenBurns(clip.id, 'in')}>⤢ Zoom in</button>
+            <button className={styles.chip} onClick={() => store.kenBurns(clip.id, 'out')}>⤡ Zoom out</button>
           </div>
         </div>
       )}
