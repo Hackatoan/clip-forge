@@ -33,7 +33,9 @@ A browser-based video editor that runs entirely locally — no uploads, no serve
 - **Voiceover recording** straight from your mic
 - **Live canvas preview** with real audio playback + loop
 - **Text & shape overlays** — fonts, bold/italic, colours, alignment, background, stroke; rectangles, circles, triangles
-- **Real export** — renders the timeline to **WebM** (native) or **MP4** (H.264 via FFmpeg.wasm) at 480/720/1080p
+- **Real export** — renders the timeline to **WebM** (native) or **MP4** (H.264 via FFmpeg.wasm) from 480p up to **4K and 8K**, with resolution-scaled bitrate
+- **iMovie-style layout** — media browser + viewer on top, full-width timeline along the bottom
+- **Landing page** — a marketing home page at `/`; the editor lives at `/#editor`
 - **Customisable UI** — 5 theme presets + custom accent, movable sidebar (left/right), drag-to-resize panels, adjustable UI size; saved locally
 - **Right-click context menus** — on clips, timeline, and preview, with smart edge-aware positioning
 - **No uploads** — all processing happens locally in your browser

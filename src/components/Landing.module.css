@@ -1,0 +1,100 @@
+.page {
+  height: 100vh;
+  overflow-y: auto;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 28px;
+  position: sticky;
+  top: 0;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  z-index: 10;
+}
+.brand { font-weight: 800; font-size: 1.1rem; }
+.logo { margin-right: 6px; }
+.navCta {
+  background: var(--primary); color: #fff;
+  padding: 8px 16px; border-radius: 8px; font-weight: 600;
+}
+.navCta:hover { background: var(--primary-glow); }
+
+.hero {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 64px 24px 40px;
+  text-align: center;
+}
+.badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  color: var(--primary-glow);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 14px;
+  margin-bottom: 22px;
+}
+.title { font-size: 2.8rem; line-height: 1.1; font-weight: 800; margin-bottom: 18px; }
+.sub { font-size: 1.05rem; color: var(--text-dim); max-width: 620px; margin: 0 auto 28px; line-height: 1.6; }
+
+.ctaRow { display: flex; gap: 12px; justify-content: center; align-items: center; margin-bottom: 48px; flex-wrap: wrap; }
+.cta {
+  background: var(--primary); color: #fff;
+  padding: 14px 28px; border-radius: 10px; font-size: 1.05rem; font-weight: 700;
+  box-shadow: 0 8px 26px color-mix(in srgb, var(--primary) 40%, transparent);
+}
+.cta:hover { background: var(--primary-glow); }
+.ghost {
+  color: var(--text); text-decoration: none;
+  padding: 14px 22px; border-radius: 10px; font-weight: 600;
+  border: 1px solid var(--border);
+}
+.ghost:hover { border-color: var(--primary); }
+
+/* App mockup */
+.mock {
+  max-width: 760px; margin: 0 auto;
+  border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+  background: var(--bg-surface); box-shadow: 0 30px 80px rgba(0,0,0,0.45);
+}
+.mockBar { display: flex; align-items: center; gap: 6px; padding: 10px 14px; background: var(--bg-surface2); border-bottom: 1px solid var(--border); }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
+.mockUrl { margin-left: 12px; font-size: 0.72rem; color: var(--text-dim); }
+.mockBody { display: flex; height: 220px; }
+.mockSidebar { width: 150px; background: var(--bg-surface2); border-right: 1px solid var(--border); }
+.mockStage { flex: 1; background: #000; }
+.mockTimeline { display: flex; gap: 6px; padding: 12px; background: var(--bg-surface2); border-top: 1px solid var(--border); }
+.mockTimeline span { height: 26px; border-radius: 4px; opacity: 0.8; }
+.mockTimeline span:nth-child(1) { width: 40%; }
+.mockTimeline span:nth-child(2) { width: 25%; }
+.mockTimeline span:nth-child(3) { width: 30%; }
+
+.features {
+  max-width: 1040px; margin: 0 auto; padding: 40px 24px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;
+}
+.card {
+  background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.card:hover { border-color: var(--primary); transform: translateY(-2px); }
+.cardIcon { font-size: 1.6rem; margin-bottom: 10px; }
+.cardTitle { font-weight: 700; margin-bottom: 6px; }
+.cardBody { font-size: 0.85rem; color: var(--text-dim); line-height: 1.5; }
+
+.bottomCta { text-align: center; padding: 56px 24px; }
+.bottomCta h2 { font-size: 1.8rem; margin-bottom: 8px; }
+.bottomCta p { color: var(--text-dim); margin-bottom: 24px; }
+
+.footer {
+  display: flex; align-items: center; justify-content: space-between;
+  max-width: 1040px; margin: 0 auto; padding: 24px; border-top: 1px solid var(--border);
+  color: var(--text-dim); font-size: 0.82rem;
+}
+.footer a { color: var(--primary-glow); }

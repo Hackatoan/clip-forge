@@ -5,7 +5,10 @@ import { exportTimeline } from '../engine/exporter';
 import { isCrossOriginIsolated } from '../engine/ffmpeg';
 import styles from './ExportModal.module.css';
 
-const HEIGHTS = { '480p': 480, '720p': 720, '1080p': 1080 };
+const HEIGHTS = {
+  '480p': 480, '720p': 720, '1080p': 1080,
+  '1440p (2K)': 1440, '2160p (4K)': 2160, '4320p (8K)': 4320,
+};
 
 export default function ExportModal({ onClose }) {
   const { tracks, duration, canvasW, canvasH, aspect } = useStore(s => ({

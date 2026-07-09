@@ -29,7 +29,15 @@
 }
 .dropBox span { font-size: 0.85rem; font-weight: 400; color: var(--text-dim); }
 
-.main {
+/* iMovie-style: browser + viewer row on top, full-width timeline below. */
+.top {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.main { /* legacy, kept for safety */
   display: flex;
   flex: 1;
   overflow: hidden;

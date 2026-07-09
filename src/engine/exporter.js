@@ -45,9 +45,11 @@ export async function exportTimeline(opts) {
   const combined = new MediaStream(tracksOut);
 
   const mimeType = pickMimeType();
+  // Scale bitrate with resolution & fps (~0.12 bits/pixel), capped for 8K.
+  const bitrate = Math.min(160_000_000, Math.round(width * height * fps * 0.12));
   const recorder = new MediaRecorder(combined, {
     mimeType,
-    videoBitsPerSecond: 8_000_000,
+    videoBitsPerSecond: bitrate,
   });
   const chunks = [];
   recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };

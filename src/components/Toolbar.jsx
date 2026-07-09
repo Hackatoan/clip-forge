@@ -3,7 +3,7 @@ import { store } from '../store/editorStore';
 import MasterMeter from './MasterMeter';
 import styles from './Toolbar.module.css';
 
-export default function Toolbar({ onPanel, activePanel, onExport, onHelp, onSettings }) {
+export default function Toolbar({ onPanel, activePanel, onExport, onHelp, onSettings, onHome }) {
   const { playing, ffmpegReady, loop, canUndo, canRedo, aspect } = useStore(s => s);
 
   const play = () => store.setPlaying(true);
@@ -18,7 +18,7 @@ export default function Toolbar({ onPanel, activePanel, onExport, onHelp, onSett
 
   return (
     <div className={styles.toolbar}>
-      <div className={styles.brand}>
+      <div className={styles.brand} onClick={onHome} style={{ cursor: onHome ? 'pointer' : 'default' }} title={onHome ? 'Back to home' : undefined}>
         <span className={styles.logo}>✂️</span>
         <span className={styles.name}>Clip Forge</span>
       </div>
