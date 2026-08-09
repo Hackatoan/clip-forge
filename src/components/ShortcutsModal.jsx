@@ -37,7 +37,7 @@ export default function ShortcutsModal({ onClose }) {
       <div className={styles.modal} style={{ width: 420 }} onClick={e => e.stopPropagation()}>
         <div className={styles.header}>
           <span>⌨ Keyboard shortcuts</span>
-          <button className={styles.close} onClick={onClose}>✕</button>
+          <button className={styles.close} onClick={onClose} aria-label="Close">✕</button>
         </div>
         <div className={styles.body}>
           {GROUPS.map(g => (

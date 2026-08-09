@@ -65,7 +65,7 @@ export default function ExportModal({ onClose }) {
       <div className={styles.modal} onClick={e => e.stopPropagation()}>
         <div className={styles.header}>
           <span>⬇ Export Video</span>
-          {!busy && <button className={styles.close} onClick={onClose}>✕</button>}
+          {!busy && <button className={styles.close} onClick={onClose} aria-label="Close">✕</button>}
         </div>
 
         {busy ? (

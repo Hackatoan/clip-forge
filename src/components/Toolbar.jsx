@@ -24,15 +24,15 @@ export default function Toolbar({ onPanel, activePanel, onExport, onHelp, onSett
       </div>
 
       <div className={styles.transport}>
-        <button className={styles.tBtn} onClick={() => store.undo()} disabled={!canUndo} title="Undo (Ctrl+Z)">↶</button>
-        <button className={styles.tBtn} onClick={() => store.redo()} disabled={!canRedo} title="Redo (Ctrl+Y)">↷</button>
+        <button className={styles.tBtn} onClick={() => store.undo()} disabled={!canUndo} aria-label="Undo" title="Undo (Ctrl+Z)">↶</button>
+        <button className={styles.tBtn} onClick={() => store.redo()} disabled={!canRedo} aria-label="Redo" title="Redo (Ctrl+Y)">↷</button>
         <span className={styles.sep} />
-        <button className={styles.tBtn} onClick={stop} title="Stop">⏹</button>
+        <button className={styles.tBtn} onClick={stop} aria-label="Stop" title="Stop">⏹</button>
         {playing
-          ? <button className={`${styles.tBtn} ${styles.active}`} onClick={pause} title="Pause (Space)">⏸</button>
-          : <button className={`${styles.tBtn} ${styles.active}`} onClick={play} title="Play (Space)">▶️</button>
+          ? <button className={`${styles.tBtn} ${styles.active}`} onClick={pause} aria-label="Pause" title="Pause (Space)">⏸</button>
+          : <button className={`${styles.tBtn} ${styles.active}`} onClick={play} aria-label="Play" title="Play (Space)">▶️</button>
         }
-        <button className={`${styles.tBtn} ${loop ? styles.active : ''}`} onClick={() => store.setLoop(!loop)} title="Loop">🔁</button>
+        <button className={`${styles.tBtn} ${loop ? styles.active : ''}`} onClick={() => store.setLoop(!loop)} aria-label="Loop" title="Loop">🔁</button>
       </div>
 
       <div className={styles.panels}>
@@ -47,8 +47,8 @@ export default function Toolbar({ onPanel, activePanel, onExport, onHelp, onSett
 
       <div className={styles.right}>
         <MasterMeter />
-        <button className={styles.tBtn} onClick={onHelp} title="Keyboard shortcuts (?)">⌨</button>
-        <button className={styles.tBtn} onClick={onSettings} title="Settings" style={{ marginRight: 8 }}>⚙</button>
+        <button className={styles.tBtn} onClick={onHelp} aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">⌨</button>
+        <button className={styles.tBtn} onClick={onSettings} aria-label="Settings" title="Settings" style={{ marginRight: 8 }}>⚙</button>
         <select className={styles.aspect} value={aspect} title="Aspect ratio"
           onChange={e => store.setAspect(e.target.value)}>
           {Object.keys(store.ASPECTS).map(a => <option key={a} value={a}>{a}</option>)}

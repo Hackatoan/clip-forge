@@ -11,7 +11,7 @@ export default function SettingsModal({ onClose }) {
       <div className={styles.modal} style={{ width: 380 }} onClick={e => e.stopPropagation()}>
         <div className={styles.header}>
           <span>⚙ Settings</span>
-          <button className={styles.close} onClick={onClose}>✕</button>
+          <button className={styles.close} onClick={onClose} aria-label="Close">✕</button>
         </div>
         <div className={styles.body}>
           <label className={styles.field}>
