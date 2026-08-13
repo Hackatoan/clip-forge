@@ -47,12 +47,13 @@ export default function Landing({ onLaunch }) {
         </div>
       </section>
 
-      <section className={styles.features}>
+      <section className={styles.features} aria-labelledby="features-heading">
+        <h2 id="features-heading" className={styles.srOnly}>Clip Forge features</h2>
         {FEATURES.map(f => (
           <div key={f.title} className={styles.card}>
-            <div className={styles.cardIcon}>{f.icon}</div>
-            <div className={styles.cardTitle}>{f.title}</div>
-            <div className={styles.cardBody}>{f.body}</div>
+            <div className={styles.cardIcon} aria-hidden="true">{f.icon}</div>
+            <h3 className={styles.cardTitle}>{f.title}</h3>
+            <p className={styles.cardBody}>{f.body}</p>
           </div>
         ))}
       </section>
