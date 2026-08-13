@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#16101f"/>
+      <stop offset="100%" stop-color="#0c0a12"/>
+    </linearGradient>
+    <linearGradient id="title" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a970ff"/>
+      <stop offset="55%" stop-color="#863bff"/>
+      <stop offset="100%" stop-color="#ff8a4a"/>
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <ellipse cx="600" cy="250" rx="640" ry="360" fill="#863bff" fill-opacity="0.08"/>
+
+  <!-- Title -->
+  <text x="600" y="270" text-anchor="middle" font-family="'Segoe UI', Roboto, system-ui, sans-serif" font-size="128" font-weight="900" letter-spacing="-2" fill="url(#title)" filter="url(#glow)">CLIP FORGE</text>
+
+  <!-- Tagline -->
+  <text x="600" y="340" text-anchor="middle" font-family="'Segoe UI', Roboto, system-ui, sans-serif" font-size="28" font-weight="600" letter-spacing="5" fill="#c9b8e6">BROWSER VIDEO EDITOR · NO UPLOAD · FREE</text>
+
+  <!-- Timeline strip -->
+  <g transform="translate(230,410)">
+    <rect x="0" y="0" width="740" height="86" rx="12" fill="#1c1428" stroke="#2c2140" stroke-width="1.5"/>
+    <!-- clips -->
+    <rect x="14" y="14" width="150" height="58" rx="7" fill="#863bff" fill-opacity="0.85"/>
+    <rect x="176" y="14" width="110" height="58" rx="7" fill="#ff8a4a" fill-opacity="0.85"/>
+    <rect x="298" y="14" width="200" height="58" rx="7" fill="#a970ff" fill-opacity="0.8"/>
+    <rect x="510" y="14" width="90"  height="58" rx="7" fill="#ff4b3a" fill-opacity="0.8"/>
+    <rect x="612" y="14" width="114" height="58" rx="7" fill="#863bff" fill-opacity="0.6"/>
+    <!-- playhead -->
+    <rect x="360" y="-10" width="3" height="106" fill="#eee6ff"/>
+    <circle cx="361.5" cy="-10" r="7" fill="#eee6ff"/>
+  </g>
+
+  <!-- Footer wordmark -->
+  <text x="600" y="575" text-anchor="middle" font-family="'Segoe UI', Roboto, system-ui, sans-serif" font-size="24" font-weight="600" letter-spacing="4" fill="#7a6a94">clip-forge.hackatoa.com</text>
+</svg>
