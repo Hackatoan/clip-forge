@@ -21,7 +21,7 @@ export default function Landing({ onLaunch }) {
 
       <section className={styles.hero}>
         <div className={styles.badge}>Browser-based · No install · Free</div>
-        <h1 className={styles.title}>The full-featured video editor<br />that runs in your browser.</h1>
+        <h1 className={styles.title}>Clip Forge — the full-featured video editor<br />that runs in your browser.</h1>
         <p className={styles.sub}>
           Multi-track editing, keyframe animation, GPU green-screen, and up-to-8K export —
           all client-side. No uploads, no account, nothing to install.

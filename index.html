@@ -41,9 +41,94 @@
       "author": { "@type": "Person", "name": "Preston Harris", "alternateName": "Hackatoa", "url": "https://hackatoa.com" }
     }
     </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Is Clip Forge free to use?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. Clip Forge is completely free — no account, no watermark, no install, and no upload required. Open the page and start editing." }
+        },
+        {
+          "@type": "Question",
+          "name": "Do my videos get uploaded to a server?",
+          "acceptedAnswer": { "@type": "Answer", "text": "No. All processing happens locally in your browser. Your footage never leaves your machine, and projects save as a single file on your computer." }
+        },
+        {
+          "@type": "Question",
+          "name": "Do I need to download or install anything?",
+          "acceptedAnswer": { "@type": "Answer", "text": "No. Clip Forge runs entirely in your web browser on desktop, so there is nothing to download or install." }
+        },
+        {
+          "@type": "Question",
+          "name": "What formats and resolutions can Clip Forge export?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Clip Forge exports to WebM or H.264 MP4 from 480p up to 4K and 8K, with bitrate that scales with resolution." }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I edit multiple tracks and add effects?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. Clip Forge has a multi-track timeline with keyframe animation, GPU green-screen (chroma key), filters, blend modes, transitions, crossfades and full audio tools." }
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Static, crawlable content. React (createRoot().render) replaces this
+           on mount, so JS users get the editor while crawlers and no-JS visitors
+           still receive real content and a static <h1>. -->
+      <main style="max-width:820px;margin:0 auto;padding:2.5rem 1.25rem;line-height:1.6;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;">
+        <h1>Clip Forge — Free Browser Video Editor</h1>
+        <p>
+          <strong>Clip Forge</strong> is a free, full-featured video editor that runs entirely in your
+          web browser. Trim, cut, and arrange clips on a multi-track timeline, add keyframe animation,
+          GPU green-screen, filters, transitions and audio — then export up to 4K or 8K. Nothing is
+          uploaded: your footage never leaves your machine, and there is no account, no watermark, and
+          no install.
+        </p>
+
+        <h2>How to edit video in your browser</h2>
+        <ol>
+          <li><strong>Open the editor</strong> — it loads instantly in any modern desktop browser, no sign-up.</li>
+          <li><strong>Drop in your clips</strong> — drag videos, audio, images, or whole folders onto the timeline.</li>
+          <li><strong>Edit</strong> — trim, split, snap and layer clips; add keyframes, chroma key, filters, transitions and audio fades.</li>
+          <li><strong>Export</strong> — render to WebM or H.264 MP4 from 480p up to 4K and 8K.</li>
+        </ol>
+
+        <h2>Features</h2>
+        <ul>
+          <li><strong>Multi-track timeline</strong> — video, audio, images, text &amp; shapes on unlimited layers.</li>
+          <li><strong>Keyframe animation</strong> — opacity, scale, position, rotation and volume with eased interpolation.</li>
+          <li><strong>GPU chroma key</strong> — green/blue-screen removal in a WebGL shader.</li>
+          <li><strong>Filters &amp; blend modes</strong> — brightness, contrast, saturation, blur, plus multiply/screen/overlay.</li>
+          <li><strong>Transitions &amp; crossfades</strong> — fades, zooms, slides and true cross-clip dissolves.</li>
+          <li><strong>Real audio tools</strong> — fades, per-clip volume, auto-ducking, reverse and a live master meter.</li>
+          <li><strong>Export up to 8K</strong> — WebM or H.264 MP4, bitrate scales with resolution.</li>
+          <li><strong>No upload, no account</strong> — everything runs client-side; footage never leaves your machine.</li>
+        </ul>
+
+        <h2>Frequently asked questions</h2>
+        <h3>Is Clip Forge free to use?</h3>
+        <p>Yes — completely free, with no account, no watermark, no install, and no upload required.</p>
+        <h3>Do my videos get uploaded to a server?</h3>
+        <p>No. All processing happens locally in your browser; your footage never leaves your machine.</p>
+        <h3>Do I need to download or install anything?</h3>
+        <p>No. Clip Forge runs entirely in your web browser, so there is nothing to download or install.</p>
+        <h3>What can Clip Forge export?</h3>
+        <p>WebM or H.264 MP4 from 480p up to 4K and 8K.</p>
+
+        <p><a href="https://games.hackatoa.com">More Hackatoa projects</a> · <a href="https://github.com/Hackatoan/clip-forge">Source on GitHub</a></p>
+      </main>
+    </div>
+    <noscript>
+      <p style="max-width:820px;margin:1rem auto;padding:0 1.25rem;font-family:system-ui,sans-serif;">
+        Clip Forge's editor needs JavaScript to run. Enable JavaScript to trim, edit and export video
+        directly in your browser — free, with no upload and no account.
+      </p>
+    </noscript>
     <script type="module" src="/src/main.jsx"></script>
     <script>
     /* ── THE VOLCANO PROTOCOL — Seal III ── */

@@ -1,4 +1,10 @@
-User-agent: *
-Allow: /
+# Cloudflare "Managed robots.txt" is prepended to this file at the edge and
+# supplies the `User-agent: *` group + Content-Signal directives (and blocks a
+# set of AI crawlers). Only site-specific directives belong below.
+#
+# NOTE: if Cloudflare Managed robots.txt is ever disabled, re-add a
+#   User-agent: *
+#   Allow: /
+# group here so this file stands alone.
 
 Sitemap: https://clip-forge.hackatoa.com/sitemap.xml
