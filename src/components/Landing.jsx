@@ -1,4 +1,5 @@
 import styles from './Landing.module.css';
+import { t } from '../i18n';
 
 const FEATURES = [
   { icon: '🎬', title: 'Multi-track timeline', body: 'Video, audio, images, text & shapes on unlimited layers. Trim, split, snap, drag-and-drop — even whole folders.' },
@@ -16,19 +17,18 @@ export default function Landing({ onLaunch }) {
     <div className={styles.page}>
       <header className={styles.nav}>
         <div className={styles.brand}><span className={styles.logo}>✂️</span> Clip Forge</div>
-        <button className={styles.navCta} onClick={onLaunch}>Open editor →</button>
+        <button className={styles.navCta} onClick={onLaunch}>{t('Open editor →')}</button>
       </header>
 
       <section className={styles.hero}>
-        <div className={styles.badge}>Browser-based · No install · Free</div>
-        <h1 className={styles.title}>Clip Forge — the full-featured video editor<br />that runs in your browser.</h1>
+        <div className={styles.badge}>{t('Browser-based · No install · Free')}</div>
+        <h1 className={styles.title}>{t('Clip Forge — the full-featured video editor that runs in your browser.')}</h1>
         <p className={styles.sub}>
-          Multi-track editing, keyframe animation, GPU green-screen, and up-to-8K export —
-          all client-side. No uploads, no account, nothing to install.
+          {t('Multi-track editing, keyframe animation, GPU green-screen, and up-to-8K export — all client-side. No uploads, no account, nothing to install.')}
         </p>
         <div className={styles.ctaRow}>
-          <button className={styles.cta} onClick={onLaunch}>🎬 Launch Clip Forge</button>
-          <a className={styles.ghost} href="https://github.com/Hackatoan/clip-forge" target="_blank" rel="noreferrer">View source</a>
+          <button className={styles.cta} onClick={onLaunch}>{t('🎬 Launch Clip Forge')}</button>
+          <a className={styles.ghost} href="https://github.com/Hackatoan/clip-forge" target="_blank" rel="noreferrer">{t('View source')}</a>
         </div>
         <div className={styles.mock}>
           <div className={styles.mockBar}>
@@ -48,20 +48,20 @@ export default function Landing({ onLaunch }) {
       </section>
 
       <section className={styles.features} aria-labelledby="features-heading">
-        <h2 id="features-heading" className={styles.srOnly}>Clip Forge features</h2>
+        <h2 id="features-heading" className={styles.srOnly}>{t('Clip Forge features')}</h2>
         {FEATURES.map(f => (
           <div key={f.title} className={styles.card}>
             <div className={styles.cardIcon} aria-hidden="true">{f.icon}</div>
-            <h3 className={styles.cardTitle}>{f.title}</h3>
-            <p className={styles.cardBody}>{f.body}</p>
+            <h3 className={styles.cardTitle}>{t(f.title)}</h3>
+            <p className={styles.cardBody}>{t(f.body)}</p>
           </div>
         ))}
       </section>
 
       <section className={styles.bottomCta}>
-        <h2>Ready to edit?</h2>
-        <p>No sign-up. Open the editor and drop in your first clip.</p>
-        <button className={styles.cta} onClick={onLaunch}>🎬 Launch Clip Forge</button>
+        <h2>{t('Ready to edit?')}</h2>
+        <p>{t('No sign-up. Open the editor and drop in your first clip.')}</p>
+        <button className={styles.cta} onClick={onLaunch}>{t('🎬 Launch Clip Forge')}</button>
       </section>
 
       <footer className={styles.footer}>
