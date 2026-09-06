@@ -4,6 +4,7 @@ import Preview from './Preview';
 import Timeline from './Timeline';
 import PropertiesPanel from './PropertiesPanel';
 import MediaPanel from './MediaPanel';
+import NotesPanel from './NotesPanel';
 import FeatureRequest from './FeatureRequest';
 import ExportModal from './ExportModal';
 import ShortcutsModal from './ShortcutsModal';
@@ -17,7 +18,7 @@ import { importFiles, filesFromDataTransfer } from '../engine/importMedia';
 import styles from '../App.module.css';
 
 export default function Editor({ onHome }) {
-  const [activePanel, setActivePanel] = useState('media'); // media | properties | features
+  const [activePanel, setActivePanel] = useState('media'); // media | properties | notes | features
   const [showExport, setShowExport] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -124,6 +125,7 @@ export default function Editor({ onHome }) {
         <div className={styles.sidebar}>
           {activePanel === 'media'      && <MediaPanel />}
           {activePanel === 'properties' && <PropertiesPanel />}
+          {activePanel === 'notes'      && <NotesPanel />}
           {activePanel === 'features'   && <FeatureRequest />}
         </div>
         <div className={styles.resizeV} onMouseDown={startResize('v')} title="Drag to resize panel" />

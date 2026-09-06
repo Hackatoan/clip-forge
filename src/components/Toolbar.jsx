@@ -13,6 +13,7 @@ export default function Toolbar({ onPanel, activePanel, onExport, onHelp, onSett
   const panels = [
     { id: 'media', label: '📁 Media' },
     { id: 'properties', label: '⚙️ Properties' },
+    { id: 'notes', label: '📝 Notes' },
     { id: 'features', label: '✨ Requests' },
   ];
 

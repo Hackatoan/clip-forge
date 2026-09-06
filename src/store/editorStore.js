@@ -29,6 +29,7 @@ function createStore() {
     canvasH: 720,
     aspect: '16:9',
     markers: [],         // [{ id, t }]
+    notes: '',           // free-form project notes (Notes tab), saved with the project
     clipboard: null,     // a copied clip payload
     canUndo: false,
     canRedo: false,
@@ -262,6 +263,28 @@ function createStore() {
       });
     },
 
+    // Flip animation preset: spin the clip 0→180° on an axis across its full
+    // duration. The user changes the flip speed by dragging the end keyframe or
+    // shortening the clip; add another 180→360 pair to flip back.
+    flipAnimation(clipId, axis = 'x') {
+      snapshot(true);
+      const prop = axis === 'y' ? 'flipY' : 'flipX';
+      setState({
+        tracks: state.tracks.map(t => ({
+          ...t,
+          clips: t.clips.map(c => {
+            if (c.id !== clipId) return c;
+            const kf = { ...(c.keyframes || {}) };
+            kf[prop] = [
+              { t: 0, v: 0, ease: 'in-out' },
+              { t: c.duration, v: 180, ease: 'in-out' },
+            ];
+            return { ...c, keyframes: kf, [prop]: 0 };
+          }),
+        })),
+      });
+    },
+
     clearKeyframes(clipId, prop) {
       snapshot(true);
       setState({
@@ -337,6 +360,9 @@ function createStore() {
     },
     removeMarker(id) { setState({ markers: state.markers.filter(m => m.id !== id) }); },
 
+    // Project notes (Notes tab)
+    setNotes(v) { setState({ notes: v }); },
+
     // Replace the whole project (from a loaded .clipforge file). Clears history.
     loadProject(proj) {
       past.length = 0; future.length = 0;
@@ -347,6 +373,7 @@ function createStore() {
         canvasW: proj.canvasW || 1280,
         canvasH: proj.canvasH || 720,
         markers: proj.markers || [],
+        notes: proj.notes || '',
         playhead: 0,
         playing: false,
         selectedClipId: null,

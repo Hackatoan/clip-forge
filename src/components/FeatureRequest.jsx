@@ -5,6 +5,7 @@ export default function FeatureRequest() {
   const [requests, setRequests] = useState([]);
   const [title, setTitle] = useState('');
   const [desc, setDesc]  = useState('');
+  const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
   const [msg, setMsg] = useState('');
 
@@ -24,10 +25,12 @@ export default function FeatureRequest() {
       await fetch('/api/features', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, description: desc }),
+        body: JSON.stringify({ title, description: desc, email }),
       });
-      setTitle(''); setDesc('');
-      setMsg('✅ Submitted! Will be worked on next available session.');
+      setTitle(''); setDesc(''); setEmail('');
+      setMsg(email.trim()
+        ? '✅ Submitted! We\'ll email you if we need details or when it ships.'
+        : '✅ Submitted! Will be worked on next available session.');
       load();
     } catch {
       setMsg('❌ Failed to submit. Server may be offline.');
@@ -35,7 +38,8 @@ export default function FeatureRequest() {
     setSending(false);
   };
 
-  const statusClass = s => ({ pending: styles.pending, working: styles.working, done: styles.done }[s] || styles.pending);
+  const statusClass = s => ({ pending: styles.pending, working: styles.working, done: styles.done, wontfix: styles.wontfix }[s] || styles.pending);
+  const statusLabel = s => (s === 'wontfix' ? "won't do" : s);
 
   return (
     <div className={styles.panel}>
@@ -51,6 +55,12 @@ export default function FeatureRequest() {
           <textarea rows={3} placeholder="Describe what you'd like..."
             value={desc} onChange={e => setDesc(e.target.value)} />
         </label>
+        <label className={styles.field}>
+          <span>Email for a response (optional)</span>
+          <input type="email" placeholder="you@example.com — leave blank to stay anonymous"
+            value={email} onChange={e => setEmail(e.target.value)} />
+        </label>
+        <p className={styles.hint}>Only used to follow up on your request. Never shown publicly or shared.</p>
         <button className={styles.primaryBtn} onClick={submit} disabled={sending || !title.trim()}>
           {sending ? 'Submitting…' : '🚀 Submit Request'}
         </button>
@@ -64,7 +74,7 @@ export default function FeatureRequest() {
           {requests.slice().reverse().map(r => (
             <div key={r.id} className={styles.featureCard}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className={`${styles.featureStatus} ${statusClass(r.status)}`}>{r.status}</span>
+                <span className={`${styles.featureStatus} ${statusClass(r.status)}`}>{statusLabel(r.status)}</span>
                 <span className={styles.featureDate}>{new Date(r.created_at).toLocaleDateString()}</span>
               </div>
               <div className={styles.featureTitle}>{r.title}</div>

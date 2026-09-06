@@ -105,12 +105,55 @@ function drawMedia(ctx, el, W, H, clip, ts, lt) {
   const cy = sample(clip, 'y', lt, clip.y ?? 0.5) * H + ts.dy * H;
   const rot = (sample(clip, 'rotation', lt, clip.rotation ?? 0) * Math.PI) / 180;
 
+  // Flip: static mirror (flipH/flipV) combined with the animatable card-flip
+  // angle (flipX/flipY). cos(angle) squashes the axis to zero at 90° (edge-on)
+  // and flips to -1 at 180°, so keyframing 0→180 spins the clip over.
+  const fx = Math.cos((sample(clip, 'flipX', lt, clip.flipX ?? 0) * Math.PI) / 180) * (clip.flipH ? -1 : 1);
+  const fy = Math.cos((sample(clip, 'flipY', lt, clip.flipY ?? 0) * Math.PI) / 180) * (clip.flipV ? -1 : 1);
+
   ctx.filter = filterString(clip);
   ctx.translate(cx, cy);
   if (rot) ctx.rotate(rot);
-  if (clip.flipH || clip.flipV) ctx.scale(clip.flipH ? -1 : 1, clip.flipV ? -1 : 1);
-  try { ctx.drawImage(el, -dw / 2, -dh / 2, dw, dh); } catch { /* frame not ready */ }
+  if (fx !== 1 || fy !== 1) ctx.scale(fx, fy);
+  try { ctx.drawImage(graded(clip, el), -dw / 2, -dh / 2, dw, dh); } catch { /* frame not ready */ }
   ctx.filter = 'none';
+}
+
+// Colour grading: temperature (warm/cool) + tint (magenta/green) applied as an
+// `overlay`-blend colour wash on a per-clip offscreen canvas, so it affects only
+// this clip's pixels and preserves transparency (chroma key / letterbox).
+let gradeCv = null;
+function graded(clip, el) {
+  const temp = clip.temp || 0, tint = clip.tint || 0;
+  if (!temp && !tint) return el;
+  const w = el.videoWidth || el.naturalWidth || el.width;
+  const h = el.videoHeight || el.naturalHeight || el.height;
+  if (!w || !h) return el;
+  if (!gradeCv) gradeCv = document.createElement('canvas');
+  gradeCv.width = w; gradeCv.height = h;
+  const g = gradeCv.getContext('2d');
+  g.globalCompositeOperation = 'source-over';
+  g.globalAlpha = 1;
+  g.clearRect(0, 0, w, h);
+  try { g.drawImage(el, 0, 0, w, h); } catch { return el; }
+
+  g.globalCompositeOperation = 'overlay';
+  if (temp) {
+    g.globalAlpha = Math.min(0.6, Math.abs(temp) / 100 * 0.6);
+    g.fillStyle = temp > 0 ? 'rgb(255,170,70)' : 'rgb(70,150,255)';
+    g.fillRect(0, 0, w, h);
+  }
+  if (tint) {
+    g.globalAlpha = Math.min(0.6, Math.abs(tint) / 100 * 0.6);
+    g.fillStyle = tint > 0 ? 'rgb(230,70,200)' : 'rgb(90,220,110)';
+    g.fillRect(0, 0, w, h);
+  }
+  // Restore the source alpha so overlay never paints into transparent regions.
+  g.globalCompositeOperation = 'destination-in';
+  g.globalAlpha = 1;
+  try { g.drawImage(el, 0, 0, w, h); } catch { /* keep as-is */ }
+  g.globalCompositeOperation = 'source-over';
+  return gradeCv;
 }
 
 // Apply chroma key if enabled, returning a processed canvas; else the element.

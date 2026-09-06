@@ -32,8 +32,18 @@ function KfRow({ clip, prop, label, localTime, inRange }) {
 }
 
 function defaultFor(prop) {
-  return ({ opacity: 1, scale: 1, x: 0.5, y: 0.5, rotation: 0, volume: 1 })[prop] ?? 0;
+  return ({ opacity: 1, scale: 1, x: 0.5, y: 0.5, rotation: 0, flipX: 0, flipY: 0, volume: 1 })[prop] ?? 0;
 }
+
+// Cinematic colour-grade presets (temperature/tint + supporting filter tweaks).
+const GRADE_PRESETS = {
+  None:            { temp: 0, tint: 0 },
+  'Teal & Orange': { temp: 35, tint: -12, contrast: 1.12, saturate: 1.15 },
+  Cinematic:       { temp: 12, tint: -8, contrast: 1.15, saturate: 0.95 },
+  'Warm film':     { temp: 45, tint: 6, contrast: 1.05, saturate: 1.1 },
+  Cold:            { temp: -40, tint: -6, contrast: 1.08, saturate: 0.9 },
+  Moody:           { temp: -15, tint: 8, contrast: 1.2, saturate: 0.8, brightness: 0.95 },
+};
 
 export default function PropertiesPanel() {
   const { tracks, selectedClipId, selectedTrackId, playhead } = useStore(s => s);
@@ -158,6 +168,12 @@ export default function PropertiesPanel() {
             <button className={styles.chip} onClick={() => store.kenBurns(clip.id, 'in')}>⤢ Zoom in</button>
             <button className={styles.chip} onClick={() => store.kenBurns(clip.id, 'out')}>⤡ Zoom out</button>
           </div>
+          <div className={styles.sectionTitle} style={{ marginTop: 10 }}>Flip animation</div>
+          <p className={styles.hint}>Spins the clip 0→180° across its length. Drag the end keyframe (Animation ◆) to change flip speed.</p>
+          <div className={styles.btnRow}>
+            <button className={styles.chip} onClick={() => store.flipAnimation(clip.id, 'x')}>⇄ Flip X (spin)</button>
+            <button className={styles.chip} onClick={() => store.flipAnimation(clip.id, 'y')}>⇅ Flip Y (spin)</button>
+          </div>
         </div>
       )}
 
@@ -172,6 +188,10 @@ export default function PropertiesPanel() {
             <KfRow clip={clip} prop="x" label="Position X" localTime={localTime} inRange={inRange} />
             <KfRow clip={clip} prop="y" label="Position Y" localTime={localTime} inRange={inRange} />
             <KfRow clip={clip} prop="rotation" label="Rotation" localTime={localTime} inRange={inRange} />
+          </>}
+          {isVisual && <>
+            <KfRow clip={clip} prop="flipX" label="Flip X" localTime={localTime} inRange={inRange} />
+            <KfRow clip={clip} prop="flipY" label="Flip Y" localTime={localTime} inRange={inRange} />
           </>}
           {isAudio && <KfRow clip={clip} prop="volume" label="Volume" localTime={localTime} inRange={inRange} />}
         </div>
@@ -257,6 +277,32 @@ export default function PropertiesPanel() {
           <button className={styles.secondaryBtn} style={{ marginTop: 6 }}
             onClick={() => upd({ brightness: 1, contrast: 1, saturate: 1, blur: 0, grayscale: 0, sepia: 0 })}>
             Reset filters
+          </button>
+        </div>
+      )}
+
+      {/* Colour grading (video / image) */}
+      {isVisual && (
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}>Colour grading</div>
+          <div className={styles.presetGrid}>
+            {Object.entries(GRADE_PRESETS).map(([name, p]) => (
+              <button key={name} className={styles.chip} onClick={() => upd(p)}>{name}</button>
+            ))}
+          </div>
+          <label className={styles.field}>
+            <span>Temperature {clip.temp > 0 ? `+${clip.temp}` : (clip.temp ?? 0)} {clip.temp > 0 ? '(warm)' : clip.temp < 0 ? '(cool)' : ''}</span>
+            <input type="range" min="-100" max="100" step="1" value={clip.temp ?? 0}
+              onChange={e => upd({ temp: +e.target.value })} />
+          </label>
+          <label className={styles.field}>
+            <span>Tint {clip.tint > 0 ? `+${clip.tint}` : (clip.tint ?? 0)} {clip.tint > 0 ? '(magenta)' : clip.tint < 0 ? '(green)' : ''}</span>
+            <input type="range" min="-100" max="100" step="1" value={clip.tint ?? 0}
+              onChange={e => upd({ tint: +e.target.value })} />
+          </label>
+          <button className={styles.secondaryBtn} style={{ marginTop: 6 }}
+            onClick={() => upd({ temp: 0, tint: 0 })}>
+            Reset grade
           </button>
         </div>
       )}

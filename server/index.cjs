@@ -33,14 +33,15 @@ app.use((req, res, next) => {
 const distPath = path.join(__dirname, '../dist');
 if (fs.existsSync(distPath)) app.use(express.static(distPath));
 
-// GET all features
+// GET all features. The submitter's email is private — strip it from the
+// public listing so it's never exposed to other visitors.
 app.get('/api/features', (req, res) => {
-  res.json(loadFeatures());
+  res.json(loadFeatures().map(({ email, ...rest }) => rest));
 });
 
 // POST new feature
 app.post('/api/features', (req, res) => {
-  const { title, description } = req.body;
+  const { title, description, email } = req.body;
   if (!title?.trim()) return res.status(400).json({ error: 'title required' });
 
   const features = loadFeatures();
@@ -48,20 +49,22 @@ app.post('/api/features', (req, res) => {
     id: Date.now(),
     title: title.trim(),
     description: description?.trim() || '',
+    email: (email || '').trim().slice(0, 254), // optional, private; never returned by GET
     status: 'pending',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
   features.push(feature);
   saveFeatures(features);
-  console.log(`[feature-request] New: #${feature.id} "${feature.title}"`);
-  res.status(201).json(feature);
+  console.log(`[feature-request] New: #${feature.id} "${feature.title}"${feature.email ? ` (contact: ${feature.email})` : ''}`);
+  const { email: _e, ...publicFeature } = feature;
+  res.status(201).json(publicFeature);
 });
 
 // PATCH status
 app.patch('/api/features/:id', (req, res) => {
   const { status } = req.body;
-  if (!['pending','working','done'].includes(status))
+  if (!['pending','working','done','wontfix'].includes(status))
     return res.status(400).json({ error: 'invalid status' });
 
   const features = loadFeatures();

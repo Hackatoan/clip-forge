@@ -57,6 +57,7 @@ export async function serializeProject(state, onProgress) {
     canvasW: state.canvasW,
     canvasH: state.canvasH,
     markers: state.markers || [],
+    notes: state.notes || '',
     tracks,
   });
 }
