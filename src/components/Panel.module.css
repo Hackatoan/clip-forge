@@ -114,6 +114,43 @@
 
 .empty { color: var(--text-dim); font-size: 0.8rem; padding: 4px; }
 
+.notice {
+  background: var(--bg-surface);
+  border: 1px solid var(--primary);
+  border-left: 3px solid var(--primary);
+  border-radius: 6px;
+  padding: 9px 11px;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+.notice strong { color: var(--primary); }
+.notice em { color: var(--text); font-style: normal; font-weight: 600; }
+.notice a { color: var(--primary); font-weight: 600; }
+
+.howtoSummary {
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--primary);
+  list-style: none;
+}
+.howtoSummary::-webkit-details-marker { display: none; }
+.howtoSummary::before { content: '▸ '; }
+details[open] .howtoSummary::before { content: '▾ '; }
+.howtoList {
+  margin: 8px 0 0;
+  padding-left: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+.howtoList strong { color: var(--text); }
+.howtoList em { color: var(--primary); font-style: normal; font-weight: 600; }
+
 .featureCard {
   background: var(--bg-surface); border: 1px solid var(--border);
   border-radius: 6px; padding: 8px 10px;
@@ -129,3 +166,14 @@
 .wontfix  { background: #94a3b833; color: #94a3b8; }
 .featureTitle { font-size: 0.8rem; color: var(--text); }
 .featureDate  { font-size: 0.65rem; color: var(--text-dim); }
+.featureResponse {
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--text);
+  background: var(--bg-surface2);
+  border-left: 2px solid var(--primary);
+  border-radius: 0 4px 4px 0;
+  padding: 5px 8px;
+  margin-top: 2px;
+}
+.responseLabel { color: var(--primary); font-weight: 700; }

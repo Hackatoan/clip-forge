@@ -21,10 +21,13 @@ export default function Landing({ onLaunch }) {
       </header>
 
       <section className={styles.hero}>
-        <div className={styles.badge}>{t('Browser-based · No install · Free')}</div>
+        <div className={styles.badge}>{t('Browser-based · No AI · No install · Free')}</div>
         <h1 className={styles.title}>{t('Clip Forge — the full-featured video editor that runs in your browser.')}</h1>
         <p className={styles.sub}>
           {t('Multi-track editing, keyframe animation, GPU green-screen, and up-to-8K export — all client-side. No uploads, no account, nothing to install.')}
+        </p>
+        <p className={styles.sub}>
+          {t("It's a hands-on editor you drive yourself — not an AI generator. You make the cuts, keyframes and color; there's no “describe your video” prompt.")}
         </p>
         <div className={styles.ctaRow}>
           <button className={styles.cta} onClick={onLaunch}>{t('🎬 Launch Clip Forge')}</button>
@@ -66,7 +69,11 @@ export default function Landing({ onLaunch }) {
 
       <footer className={styles.footer}>
         <span>Clip Forge — a <a href="https://hackatoa.com" target="_blank" rel="noreferrer">Hackatoa</a> project.</span>
-        <span><a href="https://github.com/Hackatoan/clip-forge" target="_blank" rel="noreferrer">GitHub</a></span>
+        <span>
+          <a href="https://github.com/Hackatoan/clip-forge" target="_blank" rel="noreferrer">GitHub</a>
+          {' · '}
+          <a href="https://buymeacoffee.com/hackatoa" target="_blank" rel="noreferrer">☕ {t('Buy me a coffee')}</a>
+        </span>
       </footer>
     </div>
   );

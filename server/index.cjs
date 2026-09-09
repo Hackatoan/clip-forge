@@ -61,16 +61,17 @@ app.post('/api/features', (req, res) => {
   res.status(201).json(publicFeature);
 });
 
-// PATCH status
+// PATCH status and/or maintainer response
 app.patch('/api/features/:id', (req, res) => {
-  const { status } = req.body;
-  if (!['pending','working','done','wontfix'].includes(status))
+  const { status, response } = req.body;
+  if (status !== undefined && !['pending','working','done','wontfix'].includes(status))
     return res.status(400).json({ error: 'invalid status' });
 
   const features = loadFeatures();
   const f = features.find(x => String(x.id) === req.params.id);
   if (!f) return res.status(404).json({ error: 'not found' });
-  f.status = status;
+  if (status !== undefined) f.status = status;
+  if (response !== undefined) f.response = String(response);
   f.updated_at = new Date().toISOString();
   saveFeatures(features);
   res.json(f);
