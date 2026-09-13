@@ -71,6 +71,7 @@ export default function Landing({ onLaunch }) {
         <span>Clip Forge — a <a href="https://hackatoa.com" target="_blank" rel="noreferrer">Hackatoa</a> project.</span>
         <span>
           <a href="https://github.com/Hackatoan/clip-forge" target="_blank" rel="noreferrer">GitHub</a>
+          <a href="https://github.com/Hackatoan/clip-forge/issues/new" target="_blank" rel="noreferrer">{t('Report an issue')}</a>
           {' · '}
           <a href="https://buymeacoffee.com/hackatoa" target="_blank" rel="noreferrer">☕ {t('Buy me a coffee')}</a>
         </span>
