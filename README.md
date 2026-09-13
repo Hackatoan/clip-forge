@@ -1,83 +1,43 @@
 # Clip Forge
 
-A browser-based video editor that runs entirely locally — no uploads, no server, no account. All rendering happens in your browser.
+A full-featured video editor that runs entirely in your browser — no uploads, no account, no install.
+
+🔗 **Live:** [clip-forge.hackatoa.com](https://clip-forge.hackatoa.com)   ·   ☕ **Support:** [Buy Me a Coffee](https://buymeacoffee.com/hackatoa)
+
+## Overview
+
+Clip Forge is a client-side, multi-track video editor. Everything is processed locally in the browser, so your media never leaves your device. Trim, split, and arrange clips across video/audio/image/text/shape tracks; add transitions, keyframes, filters, chroma key, and export up to 8K.
 
 ## Features
 
-- **Multi-track timeline** — video, audio, image, text, shape, and voiceover layers
-- **Drag & drop import** — drop files (or whole folders) straight onto a layer at the exact time, or onto empty space for a new layer
-- **Folder import** — bring in an entire folder; files group onto shared layers by type
-- **GPU-accelerated chroma key** — WebGL keying with per-clip frame caching (CPU fallback)
-- **Multi-select** — Shift/Ctrl-click clips (or Ctrl+A) to move, duplicate, or delete several at once
-- **Master meter & volume** — live output level meter with a master volume control
-- **Trim, move, split & snap** — drag clips, trim edges, split at the playhead, snapping toggle (Alt to bypass)
-- **Keyframe animation** — animate opacity, scale, position, rotation & volume over time with eased interpolation; keyframe markers on the timeline
-- **Undo / redo** with full history
-- **Copy · paste · duplicate** clips
-- **Save / load projects** — self-contained `.clipforge.json` files with media embedded; survives reloads and is shareable as a single file
-- **Media import** — video, audio, and images
-- **Aspect-ratio presets** — 16:9, 9:16, 1:1, 4:3, 21:9 (canvas resizes live)
-- **Clip playback speed** — 0.25×–4× slow-mo / fast-motion
-- **Transform** — scale, position, rotation, flip, and fit (cover / contain / fill) on video, images, text & shapes
-- **Colour filters & presets** — brightness, contrast, saturation, blur, grayscale + one-click looks (B&W, Vintage, Warm, Cool, Vivid)
-- **Blend modes** — multiply, screen, overlay, lighten, darken, add
-- **Chroma key** — green/blue-screen removal with adjustable similarity & edge softness
-- **Timeline previews** — poster thumbnails on video/image clips, waveforms on audio clips
-- **Track reordering** — move tracks up/down to control layer order
-- **Audio fades & ducking** — per-clip fade in / fade out, volume, mute, and auto-ducking (lower other tracks under a voiceover)
-- **Reverse** — play clips backwards (true reversed audio, seeked video)
-- **Freeze frame** — drop a still of the current frame
-- **Ken Burns** — one-click pan & zoom on photos/video
-- **Timeline markers** — drop markers (M) and click to jump
-- **Transitions** — separate in / out (fade, fade-to-black, fade-to-white, zoom, slide 4-dir) with adjustable durations, plus one-click **cross-clip crossfades** between adjacent clips
-- **Voiceover recording** straight from your mic
-- **Live canvas preview** with real audio playback + loop
-- **Text & shape overlays** — fonts, bold/italic, colours, alignment, background, stroke; rectangles, circles, triangles
-- **Real export** — renders the timeline to **WebM** (native) or **MP4** (H.264 via FFmpeg.wasm) from 480p up to **4K and 8K**, with resolution-scaled bitrate
-- **iMovie-style layout** — media browser + viewer on top, full-width timeline along the bottom
-- **Landing page** — a marketing home page at `/`; the editor lives at `/#editor`
-- **Customisable UI** — 5 theme presets + custom accent, movable sidebar (left/right), drag-to-resize panels, adjustable UI size; saved locally
-- **Right-click context menus** — on clips, timeline, and preview, with smart edge-aware positioning
-- **No uploads** — all processing happens locally in your browser
+- Multi-track timeline (video / audio / image / text / shape / voiceover)
+- Trim, split, snap, copy/paste, undo/redo, multi-select
+- Keyframes, transitions & crossfades, filters, color grading, chroma key
+- Save/load projects as a single `.clipforge` file
+- WebM export + optional FFmpeg.wasm MP4 transcode (up to 8K)
+- 6-language localization
 
-## Keyboard shortcuts
+## Tech Stack
 
-| Key | Action |
-|-----|--------|
-| `Space` | Play / pause |
-| `←` / `→` | Step playhead 0.1s (hold `Shift` for 1s) |
-| `Home` / `End` | Jump to start / end |
-| `Ctrl/⌘ + Z` / `Ctrl/⌘ + Shift + Z` (or `Y`) | Undo / redo |
-| `Ctrl/⌘ + C` / `V` / `D` | Copy / paste / duplicate clip |
-| `Delete` / `Backspace` | Delete selected clip |
-| Double-click clip | Split at playhead |
+React · Vite · Web Audio / Canvas / WebGL · FFmpeg.wasm · Express · Docker
 
-## Stack
-
-- React + Vite
-- Canvas 2D + `canvas.captureStream` + `MediaRecorder` for rendering/export
-- Web Audio API for preview sound and the export audio mix
-- [@ffmpeg/ffmpeg](https://github.com/ffmpegwasm/ffmpeg.wasm) — WebAssembly FFmpeg for the optional MP4 transcode
-- Express static server (sets COOP/COEP for cross-origin isolation)
-- Docker-ready
-
-> MP4 export needs the page to be **cross-origin isolated** (the bundled server sends the required `COOP`/`COEP` headers). WebM export works everywhere.
-
-## Self-hosting
-
-```bash
-git clone https://github.com/Hackatoan/clip-forge
-cd clip-forge
-docker compose up --build
-```
-
-Or run locally:
+## Development
 
 ```bash
 npm install
 npm run dev
 ```
 
+## Deployment
+
+Docker on the homelab host; GHCR + Watchtower auto-deploy. The production server sends COOP/COEP headers so FFmpeg.wasm MP4 export works.
+
+## Support
+
+If this project is useful to you, consider supporting development:
+
+☕ **[Buy Me a Coffee](https://buymeacoffee.com/hackatoa)**
+
 ---
 
-[hackatoa.com](https://hackatoa.com) · [GitHub](https://github.com/Hackatoan) · [![Buy Me A Coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/hackatoa)
+Part of the **[Hackatoa](https://hackatoa.com)** ecosystem — self-hosted apps, browser games, and bots. · [All repositories »](https://github.com/Hackatoan)
