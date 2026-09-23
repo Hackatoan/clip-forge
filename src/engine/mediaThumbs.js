@@ -2,13 +2,21 @@
 // thumbnails for video/image clips. Results are data URLs, cached by source
 // so duplicated/split clips don't recompute.
 
-const waveCache = new Map();   // src -> dataURL | null (null = in-flight)
-const posterCache = new Map(); // src -> dataURL | null
+const waveCache = new Map();   // src -> dataURL | Promise<dataURL|null> (Promise = in-flight)
+const posterCache = new Map(); // src -> dataURL | Promise<dataURL|null>
 let decodeCtx;
 
 export async function ensureWaveform(src) {
   if (waveCache.has(src)) return waveCache.get(src);
-  waveCache.set(src, null);
+  const promise = computeWaveform(src);
+  waveCache.set(src, promise);
+  const url = await promise;
+  if (url) waveCache.set(src, url);
+  else waveCache.delete(src); // allow retry on next call
+  return url;
+}
+
+async function computeWaveform(src) {
   try {
     const buf = await fetch(src).then(r => r.arrayBuffer());
     decodeCtx = decodeCtx || new (window.AudioContext || window.webkitAudioContext)();
@@ -30,18 +38,23 @@ export async function ensureWaveform(src) {
       const h = Math.max(1, max * H);
       cx.fillRect(i, (H - h) / 2, 1, h);
     }
-    const url = c.toDataURL('image/png');
-    waveCache.set(src, url);
-    return url;
+    return c.toDataURL('image/png');
   } catch {
-    waveCache.delete(src);
     return null;
   }
 }
 
 export async function ensurePoster(src, isVideo) {
   if (posterCache.has(src)) return posterCache.get(src);
-  posterCache.set(src, null);
+  const promise = computePoster(src, isVideo);
+  posterCache.set(src, promise);
+  const url = await promise;
+  if (url) posterCache.set(src, url);
+  else posterCache.delete(src); // allow retry on next call
+  return url;
+}
+
+async function computePoster(src, isVideo) {
   try {
     const W = 160, H = 90;
     const c = document.createElement('canvas');
@@ -57,7 +70,7 @@ export async function ensurePoster(src, isVideo) {
     };
 
     if (isVideo) {
-      const url = await new Promise((resolve, reject) => {
+      return await new Promise((resolve, reject) => {
         const v = document.createElement('video');
         v.muted = true; v.crossOrigin = 'anonymous'; v.src = src;
         v.onloadeddata = () => { try { v.currentTime = Math.min(0.1, v.duration || 0.1); } catch { resolve(null); } };
@@ -67,20 +80,15 @@ export async function ensurePoster(src, isVideo) {
         };
         v.onerror = reject;
       });
-      posterCache.set(src, url);
-      return url;
     } else {
-      const url = await new Promise((resolve, reject) => {
+      return await new Promise((resolve, reject) => {
         const img = new Image();
         img.crossOrigin = 'anonymous'; img.src = src;
         img.onload = () => { draw(img, img.naturalWidth, img.naturalHeight); resolve(c.toDataURL('image/jpeg', 0.6)); };
         img.onerror = reject;
       });
-      posterCache.set(src, url);
-      return url;
     }
   } catch {
-    posterCache.delete(src);
     return null;
   }
 }
