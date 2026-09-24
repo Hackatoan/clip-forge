@@ -70,9 +70,18 @@ export default function ExportModal({ onClose }) {
 
         {busy ? (
           <div className={styles.progressWrap}>
-            <div className={styles.stage}>{stage}</div>
-            <div className={styles.bar}><div className={styles.fill} style={{ width: `${progress}%` }} /></div>
-            <div className={styles.pct}>{progress}%</div>
+            <div className={styles.stage} aria-live="polite">{stage}</div>
+            <div
+              className={styles.bar}
+              role="progressbar"
+              aria-label="Export progress"
+              aria-valuenow={progress}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <div className={styles.fill} style={{ width: `${progress}%` }} />
+            </div>
+            <div className={styles.pct} aria-hidden="true">{progress}%</div>
             <p className={styles.note}>
               Export renders in real time — a {Math.ceil(duration)}s timeline takes about {Math.ceil(duration)}s.
               Keep this tab focused.
