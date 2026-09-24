@@ -4,7 +4,14 @@ import MasterMeter from './MasterMeter';
 import styles from './Toolbar.module.css';
 
 export default function Toolbar({ onPanel, activePanel, onExport, onHelp, onSettings, onHome }) {
-  const { playing, ffmpegReady, loop, canUndo, canRedo, aspect } = useStore(s => s);
+  // Select only the fields this toolbar renders — with shallowEqual in
+  // useStore this avoids re-rendering on every animation-frame playhead/track
+  // update while a project plays back (previously `s => s` re-rendered the
+  // whole toolbar up to 60x/sec during playback for no visible change).
+  const { playing, ffmpegReady, loop, canUndo, canRedo, aspect } = useStore(s => ({
+    playing: s.playing, ffmpegReady: s.ffmpegReady, loop: s.loop,
+    canUndo: s.canUndo, canRedo: s.canRedo, aspect: s.aspect,
+  }));
 
   const play = () => store.setPlaying(true);
   const pause = () => store.setPlaying(false);
