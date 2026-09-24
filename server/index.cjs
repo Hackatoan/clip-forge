@@ -2,10 +2,34 @@ const express = require('express');
 const cors    = require('cors');
 const path    = require('path');
 const fs      = require('fs');
+const crypto  = require('crypto');
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
 const DATA_FILE = process.env.DATA_FILE || path.join(__dirname, '../data/features.json');
+
+// Shared secret for the maintainer-only PATCH endpoint below. Without it the
+// endpoint is disabled (fail closed) rather than silently open to anyone.
+const ADMIN_TOKEN = process.env.FEATURE_ADMIN_TOKEN || '';
+if (!ADMIN_TOKEN) {
+  console.warn('[feature-request] FEATURE_ADMIN_TOKEN not set — PATCH /api/features/:id is disabled.');
+}
+
+function timingSafeEqual(a, b) {
+  const bufA = Buffer.from(String(a));
+  const bufB = Buffer.from(String(b));
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+function requireAdmin(req, res, next) {
+  const header = req.get('authorization') || '';
+  const provided = header.replace(/^Bearer\s+/i, '').trim();
+  if (!ADMIN_TOKEN || !provided || !timingSafeEqual(provided, ADMIN_TOKEN)) {
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+  next();
+}
 
 // Ensure data dir exists
 fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
@@ -61,8 +85,11 @@ app.post('/api/features', (req, res) => {
   res.status(201).json(publicFeature);
 });
 
-// PATCH status and/or maintainer response
-app.patch('/api/features/:id', (req, res) => {
+// PATCH status and/or maintainer response — maintainer-only, requires
+// `Authorization: Bearer <FEATURE_ADMIN_TOKEN>`. This was previously
+// unauthenticated: since GET returns each feature's id, anyone could change
+// the status or spoof a maintainer "response" on any request.
+app.patch('/api/features/:id', requireAdmin, (req, res) => {
   const { status, response } = req.body;
   if (status !== undefined && !['pending','working','done','wontfix'].includes(status))
     return res.status(400).json({ error: 'invalid status' });
