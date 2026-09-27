@@ -37,5 +37,5 @@ jobs:
             npm install --omit=dev --omit=optional &&
             sudo systemctl restart clipforge-api &&
             sleep 2 &&
-            sudo systemctl status clipforge-api --no-pager
+            sudo systemctl status clipforge-api
           '
