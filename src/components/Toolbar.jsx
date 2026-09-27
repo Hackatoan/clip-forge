@@ -22,6 +22,7 @@ export default function Toolbar({ onPanel, activePanel, onExport, onHelp, onSett
     { id: 'properties', label: '⚙️ Properties' },
     { id: 'notes', label: '📝 Notes' },
     { id: 'features', label: '✨ Requests' },
+    { id: 'ai', label: '🤖 AI Editor' },
   ];
 
   return (

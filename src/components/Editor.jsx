@@ -6,19 +6,27 @@ import PropertiesPanel from './PropertiesPanel';
 import MediaPanel from './MediaPanel';
 import NotesPanel from './NotesPanel';
 import FeatureRequest from './FeatureRequest';
+import AiEditor from './AiEditor';
 import ExportModal from './ExportModal';
 import ShortcutsModal from './ShortcutsModal';
 import SettingsModal from './SettingsModal';
 import ContextMenu from './ContextMenu';
 import { store } from '../store/editorStore';
 import { uiStore } from '../store/uiStore';
+import { proStore } from '../store/proStore';
 import { useUi } from '../hooks/useUi';
 import { loadFFmpeg, isCrossOriginIsolated } from '../engine/ffmpeg';
 import { importFiles, filesFromDataTransfer } from '../engine/importMedia';
 import styles from '../App.module.css';
 
+// Stripe Checkout returns to /?pro=1#editor — land straight on the AI Editor
+// panel and re-check status (the email is already remembered from before
+// checkout started) instead of leaving the user to find it themselves.
+const returningFromCheckout = new URLSearchParams(window.location.search).get('pro') === '1';
+if (returningFromCheckout) proStore.refreshStatus();
+
 export default function Editor({ onHome }) {
-  const [activePanel, setActivePanel] = useState('media'); // media | properties | notes | features
+  const [activePanel, setActivePanel] = useState(returningFromCheckout ? 'ai' : 'media'); // media | properties | notes | features | ai
   const [showExport, setShowExport] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -44,6 +52,12 @@ export default function Editor({ onHome }) {
     window.addEventListener('mousemove', move);
     window.addEventListener('mouseup', up);
   };
+
+  // Drop ?pro=1 from the URL once handled so a later refresh doesn't keep
+  // forcing the AI Editor panel open.
+  useEffect(() => {
+    if (returningFromCheckout) history.replaceState('', document.title, `${window.location.pathname}${window.location.hash}`);
+  }, []);
 
   // Preload ffmpeg.wasm in the background (only useful if cross-origin isolated).
   useEffect(() => {
@@ -132,6 +146,7 @@ export default function Editor({ onHome }) {
           {activePanel === 'properties' && <PropertiesPanel />}
           {activePanel === 'notes'      && <NotesPanel />}
           {activePanel === 'features'   && <FeatureRequest />}
+          {activePanel === 'ai'         && <AiEditor />}
         </div>
         <div className={styles.resizeV} onMouseDown={startResize('v')} title="Drag to resize panel" />
         <Preview />
