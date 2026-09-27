@@ -1,0 +1,41 @@
+name: Deploy API to Oracle
+
+# The backend (feature-request board + Pro billing) runs standalone on the
+# Oracle box now — no Watchtower there, so this pushes changes directly
+# instead of the pull-based pattern the homelab containers use.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/deploy-api.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up deploy key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.ORACLE_DEPLOY_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.ORACLE_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Ship server code
+        run: |
+          scp -i ~/.ssh/deploy_key server/index.cjs deploy@${{ secrets.ORACLE_HOST }}:/opt/clipforge-api/index.cjs
+          scp -i ~/.ssh/deploy_key package.json package-lock.json deploy@${{ secrets.ORACLE_HOST }}:/opt/clipforge-api/
+
+      - name: Install deps and restart
+        run: |
+          ssh -i ~/.ssh/deploy_key deploy@${{ secrets.ORACLE_HOST }} '
+            cd /opt/clipforge-api &&
+            npm install --omit=dev --omit=optional &&
+            sudo systemctl restart clipforge-api &&
+            sleep 2 &&
+            sudo systemctl status clipforge-api --no-pager
+          '

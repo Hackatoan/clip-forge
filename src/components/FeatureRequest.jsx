@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_BASE } from '../apiBase';
 import styles from './Panel.module.css';
 
 export default function FeatureRequest() {
@@ -11,7 +12,7 @@ export default function FeatureRequest() {
   const [showHowto, setShowHowto] = useState(false);
 
   const load = () => {
-    fetch('/api/features')
+    fetch(`${API_BASE}/api/features`)
       .then(r => r.json())
       .then(setRequests)
       .catch(() => {});
@@ -23,7 +24,7 @@ export default function FeatureRequest() {
     if (!title.trim()) return;
     setSending(true);
     try {
-      await fetch('/api/features', {
+      await fetch(`${API_BASE}/api/features`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, description: desc, email }),

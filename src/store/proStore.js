@@ -4,11 +4,10 @@
 // who knows the email could ask the same question, but the answer is just
 // "show the Pro UI or don't" — nothing sensitive is gated behind it.
 
-const KEY = 'clipforge.pro.v1';
+import { API_BASE } from '../apiBase';
 
-// Cloud Functions v2 HTTPS function, reachable at the stable
-// https://{region}-{project}.cloudfunctions.net/{name} compatibility URL.
-const FUNCTIONS_BASE = 'https://us-central1-clip-forge-pro.cloudfunctions.net/api';
+const KEY = 'clipforge.pro.v1';
+const FUNCTIONS_BASE = `${API_BASE}/api/subscribe`;
 
 const DEFAULTS = { email: '', active: false, plan: null, until: null, checkedAt: null };
 
