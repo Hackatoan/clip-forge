@@ -83,6 +83,11 @@ export default function Editor({ onHome }) {
         e.preventDefault(); store.setPlayhead(s.playhead - (e.shiftKey ? 1 : 0.1));
       } else if (e.key === 'ArrowRight') {
         e.preventDefault(); store.setPlayhead(s.playhead + (e.shiftKey ? 1 : 0.1));
+      } else if (e.key === ',' || e.key === '<') {
+        // Frame-accurate step back (assumes a 30fps grid — matches the default export fps).
+        e.preventDefault(); store.setPlayhead(Math.max(0, s.playhead - 1 / 30));
+      } else if (e.key === '.' || e.key === '>') {
+        e.preventDefault(); store.setPlayhead(Math.min(s.duration, s.playhead + 1 / 30));
       } else if (e.key === 'Home') {
         e.preventDefault(); store.setPlayhead(0);
       } else if (e.key === 'End') {

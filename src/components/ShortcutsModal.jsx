@@ -6,6 +6,7 @@ const GROUPS = [
     items: [
       ['Space', 'Play / pause'],
       ['← / →', 'Step 0.1s (Shift = 1s)'],
+      [', / .', 'Step 1 frame back / forward'],
       ['Home / End', 'Jump to start / end'],
       ['Drag ruler / playhead', 'Scrub'],
     ],

@@ -1,8 +1,13 @@
+import { useState } from 'react';
 import { useStore } from '../hooks/useStore';
+import { useFonts } from '../hooks/useFonts';
 import { store } from '../store/editorStore';
+import { fontStore } from '../store/fontStore';
 import { hasKeyframes } from '../engine/keyframes';
 import { reverseAudio } from '../engine/audioReverse';
 import styles from './Panel.module.css';
+
+const SYSTEM_FONTS = ['system-ui', 'Arial', 'Georgia', 'Times New Roman', 'Courier New', 'Impact', 'Comic Sans MS', 'Trebuchet MS', 'Verdana'];
 
 const TRANSITIONS = ['none', 'fade', 'fade-black', 'fade-white', 'slide-left', 'slide-right', 'slide-up', 'slide-down', 'zoom-in', 'zoom-out'];
 const BLENDS = ['normal', 'multiply', 'screen', 'overlay', 'lighten', 'darken', 'add'];
@@ -47,6 +52,8 @@ const GRADE_PRESETS = {
 
 export default function PropertiesPanel() {
   const { tracks, selectedClipId, selectedTrackId, playhead } = useStore(s => s);
+  const customFonts = useFonts();
+  const [fontError, setFontError] = useState('');
 
   const track = tracks.find(t => t.id === selectedTrackId);
   const clip = track?.clips.find(c => c.id === selectedClipId);
@@ -274,8 +281,13 @@ export default function PropertiesPanel() {
             <input type="range" min="0" max="1" step="0.01" value={clip.grayscale ?? 0}
               onChange={e => upd({ grayscale: +e.target.value })} />
           </label>
+          <label className={styles.field}>
+            <span>Sharpen {Math.round((clip.sharpen ?? 0) * 100)}%</span>
+            <input type="range" min="0" max="1" step="0.01" value={clip.sharpen ?? 0}
+              onChange={e => upd({ sharpen: +e.target.value })} />
+          </label>
           <button className={styles.secondaryBtn} style={{ marginTop: 6 }}
-            onClick={() => upd({ brightness: 1, contrast: 1, saturate: 1, blur: 0, grayscale: 0, sepia: 0 })}>
+            onClick={() => upd({ brightness: 1, contrast: 1, saturate: 1, blur: 0, grayscale: 0, sepia: 0, sharpen: 0 })}>
             Reset filters
           </button>
         </div>
@@ -357,6 +369,42 @@ export default function PropertiesPanel() {
             <span>Content</span>
             <textarea rows={2} value={clip.text || ''} onChange={e => upd({ text: e.target.value })} />
           </label>
+          <label className={styles.field}>
+            <span>Font family</span>
+            <select value={clip.fontFamily || 'system-ui'} onChange={e => upd({ fontFamily: e.target.value })}
+              style={{ fontFamily: `"${clip.fontFamily || 'system-ui'}"` }}>
+              <optgroup label="System">
+                {SYSTEM_FONTS.map(f => <option key={f} value={f} style={{ fontFamily: `"${f}"` }}>{f}</option>)}
+              </optgroup>
+              {customFonts.length > 0 && (
+                <optgroup label="Custom">
+                  {customFonts.map(f => <option key={f.id} value={f.name} style={{ fontFamily: `"${f.name}"` }}>{f.name}</option>)}
+                </optgroup>
+              )}
+            </select>
+          </label>
+          <label className={styles.field}>
+            <span>Upload font (.ttf / .otf / .woff / .woff2)</span>
+            <input type="file" accept=".ttf,.otf,.woff,.woff2" onChange={async e => {
+              const file = e.target.files?.[0];
+              e.target.value = '';
+              if (!file) return;
+              setFontError('');
+              try {
+                const font = await fontStore.addFont(file);
+                upd({ fontFamily: font.name });
+              } catch (err) { setFontError(err.message); }
+            }} />
+          </label>
+          {fontError && <div style={{ color: 'var(--primary)', fontSize: '0.75rem', marginTop: -4, marginBottom: 8 }}>{fontError}</div>}
+          {customFonts.length > 0 && (
+            <div className={styles.presetGrid}>
+              {customFonts.map(f => (
+                <button key={f.id} className={styles.chip} title="Remove custom font"
+                  onClick={() => fontStore.removeFont(f.id)}>{f.name} ✕</button>
+              ))}
+            </div>
+          )}
           <label className={styles.field}>
             <span>Font size</span>
             <input type="number" value={clip.fontSize || 36} onChange={e => upd({ fontSize: +e.target.value })} />

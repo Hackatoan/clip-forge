@@ -69,6 +69,25 @@ const BLEND = {
   overlay: 'overlay', lighten: 'lighten', darken: 'darken', add: 'lighter',
 };
 
+// Sharpen is a convolution (unsharp) kernel, not expressible as a CSS filter
+// function — define it once as a hidden SVG <feConvolveMatrix> and reference
+// it via ctx.filter = 'url(#cfSharpenKernel)' (supported alongside the normal
+// filter functions in the same filter string).
+let sharpenDefReady = false;
+function ensureSharpenDef() {
+  if (sharpenDefReady || typeof document === 'undefined') return;
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('width', '0');
+  svg.setAttribute('height', '0');
+  svg.style.position = 'absolute';
+  svg.innerHTML = `<filter id="cfSharpenKernel" color-interpolation-filters="sRGB">
+    <feConvolveMatrix order="3" preserveAlpha="true" edgeMode="duplicate"
+      kernelMatrix="0 -1 0 -1 5 -1 0 -1 0" />
+  </filter>`;
+  document.body.appendChild(svg);
+  sharpenDefReady = true;
+}
+
 // Build a CSS filter string from a clip's colour-adjustment props.
 function filterString(clip) {
   const f = [];
@@ -115,7 +134,19 @@ function drawMedia(ctx, el, W, H, clip, ts, lt) {
   ctx.translate(cx, cy);
   if (rot) ctx.rotate(rot);
   if (fx !== 1 || fy !== 1) ctx.scale(fx, fy);
-  try { ctx.drawImage(graded(clip, el), -dw / 2, -dh / 2, dw, dh); } catch { /* frame not ready */ }
+  const src = graded(clip, el);
+  try { ctx.drawImage(src, -dw / 2, -dh / 2, dw, dh); } catch { /* frame not ready */ }
+  // Sharpen: draw a second, convolution-filtered pass on top, faded in by
+  // `sharpen` amount (0–1) — blending source-over with reduced alpha is a
+  // linear mix between the soft original and the fully sharpened frame.
+  if (clip.sharpen) {
+    ensureSharpenDef();
+    const baseAlpha = ctx.globalAlpha;
+    ctx.filter = `${filterString(clip)} url(#cfSharpenKernel)`;
+    ctx.globalAlpha = baseAlpha * Math.min(1, clip.sharpen);
+    try { ctx.drawImage(src, -dw / 2, -dh / 2, dw, dh); } catch { /* frame not ready */ }
+    ctx.globalAlpha = baseAlpha;
+  }
   ctx.filter = 'none';
 }
 
@@ -207,7 +238,7 @@ export function renderFrame(ctx, W, H, tracks, ph) {
         const img = mediaEngine.getImageElement(clip.id);
         if (img && img.complete && img.naturalWidth) drawMedia(ctx, keyed(clip, img, img.naturalWidth, img.naturalHeight), W, H, clip, ts, lt);
       } else if (track.type === 'text') {
-        ctx.font = `${clip.italic ? 'italic ' : ''}${clip.bold ? 'bold ' : ''}${clip.fontSize || 48}px ${clip.fontFamily || 'system-ui, sans-serif'}`;
+        ctx.font = `${clip.italic ? 'italic ' : ''}${clip.bold ? 'bold ' : ''}${clip.fontSize || 48}px "${clip.fontFamily || 'system-ui'}", sans-serif`;
         ctx.fillStyle = clip.color || '#ffffff';
         ctx.textAlign = clip.align || 'center';
         ctx.textBaseline = 'middle';
