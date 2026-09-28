@@ -25,3 +25,6 @@ dist-ssr
 
 # editor tooling
 .claude/
+
+# Firebase CLI local cache
+.firebase/

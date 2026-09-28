@@ -1,0 +1,33 @@
+name: Deploy to Firebase Hosting
+
+# The frontend (editor + landing page) lives on Firebase Hosting now — the
+# API split off to the Oracle box (see deploy-api.yml). This only needs to
+# run when the built app itself changes, not the backend.
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'server/**'
+      - '.github/workflows/deploy-api.yml'
+      - 'docker-compose.yml'
+      - 'Dockerfile'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+      - run: npm run build
+
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
+          projectId: clipforge-9453d
+          channelId: live

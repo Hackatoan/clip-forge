@@ -64,17 +64,16 @@ const saveFeatures = (v) => saveJson(FEATURES_FILE, v);
 const loadSubscribers = () => loadJson(SUBSCRIBERS_FILE, {});
 const saveSubscribers = (v) => saveJson(SUBSCRIBERS_FILE, v);
 
-const ALLOWED_ORIGINS = ['https://clip-forge.hackatoa.com', 'http://localhost:5173', 'http://localhost:3299'];
+const ALLOWED_ORIGINS = [
+  'https://clip-forge.hackatoa.com',
+  // Firebase Hosting's own domains — kept even after the custom domain is
+  // live since they stay usable as a staging/fallback URL.
+  'https://clipforge-9453d.web.app',
+  'https://clipforge-9453d.firebaseapp.com',
+  'http://localhost:5173',
+  'http://localhost:3299',
+];
 app.use(cors({ origin: ALLOWED_ORIGINS }));
-
-// Transition period only: needed for ffmpeg.wasm (SharedArrayBuffer) on the
-// homelab's still-bundled copy of the frontend — see the dist/ note below.
-// Firebase Hosting sets these itself for the real deployment.
-app.use((req, res, next) => {
-  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-  res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
-  next();
-});
 
 // Registered before express.json() so the raw body survives for Stripe's
 // signature check — a route-specific parser always wins over one added
@@ -216,19 +215,7 @@ app.patch('/api/features/:id', requireAdmin, (req, res) => {
   res.json(f);
 });
 
-// Transition period only: the homelab's own deploy still bundles the built
-// frontend into this same image (see Dockerfile) so the currently-live site
-// doesn't break the moment this ships — it just also gets the new Stripe
-// endpoints, unused there since STRIPE_SECRET_KEY isn't set on that host.
-// Safe to delete once clip-forge.hackatoa.com is cut over to Firebase
-// Hosting and this box is the only thing serving the API.
-const distPath = path.join(__dirname, '../dist');
-if (fs.existsSync(distPath)) app.use(express.static(distPath));
-app.use((req, res) => {
-  const index = path.join(distPath, 'index.html');
-  if (fs.existsSync(index)) return res.sendFile(index);
-  res.status(404).json({ error: 'not found' });
-});
+app.use((req, res) => res.status(404).json({ error: 'not found' }));
 
 // Self-signed cert: NPMplus (the public TLS-terminating edge for
 // hackatoa.com) forwards to this over the open internet, so the hop is
