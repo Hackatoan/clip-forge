@@ -64,6 +64,21 @@ function frameOverlay(tracks, ph) {
   return { black, white };
 }
 
+// Draw order within a track only changes when clips are added/moved/removed,
+// but renderFrame runs on every playback tick and every export frame (up to
+// 60x/sec). The store always replaces a track's `clips` array immutably on
+// edit (see editorStore.js), so the array reference is a reliable cache key —
+// skip the O(n log n) sort entirely on the common case where nothing changed.
+const sortedClipsCache = new WeakMap();
+function orderedClips(clips) {
+  let cached = sortedClipsCache.get(clips);
+  if (!cached) {
+    cached = [...clips].sort((a, b) => a.start - b.start);
+    sortedClipsCache.set(clips, cached);
+  }
+  return cached;
+}
+
 const BLEND = {
   normal: 'source-over', multiply: 'multiply', screen: 'screen',
   overlay: 'overlay', lighten: 'lighten', darken: 'darken', add: 'lighter',
@@ -221,7 +236,7 @@ export function renderFrame(ctx, W, H, tracks, ph) {
     const track = tracks[ti];
     // Sort by start so overlapping clips composite in temporal order
     // (a later-starting clip draws on top — needed for cross-clip fades).
-    const ordered = [...track.clips].sort((a, b) => a.start - b.start);
+    const ordered = orderedClips(track.clips);
     for (const clip of ordered) {
       if (ph < clip.start || ph > clip.start + clip.duration) continue;
       const lt = ph - clip.start;
