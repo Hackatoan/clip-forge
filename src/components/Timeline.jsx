@@ -250,23 +250,29 @@ export default function Timeline() {
               <span className={styles.trackName}>{track.name}</span>
               <div className={styles.trackControls}>
                 <button className={styles.iconBtn} disabled={ti === 0}
-                  onClick={() => store.moveTrack(track.id, -1)} title="Move up">▲</button>
+                  onClick={() => store.moveTrack(track.id, -1)} title="Move up"
+                  aria-label={`Move ${track.name} track up`}>▲</button>
                 <button className={styles.iconBtn} disabled={ti === tracks.length - 1}
-                  onClick={() => store.moveTrack(track.id, 1)} title="Move down">▼</button>
+                  onClick={() => store.moveTrack(track.id, 1)} title="Move down"
+                  aria-label={`Move ${track.name} track down`}>▼</button>
                 <button className={`${styles.iconBtn} ${track.muted ? styles.muted : ''}`}
                   onClick={() => store.updateTrack(track.id, { muted: !track.muted })}
-                  title="Mute">M</button>
+                  title="Mute" aria-label={`${track.muted ? 'Unmute' : 'Mute'} ${track.name}`}
+                  aria-pressed={!!track.muted}>M</button>
                 {(track.type === 'audio' || track.type === 'voiceover') && (
                   <button className={`${styles.iconBtn} ${track.duck ? styles.muted : ''}`}
                     onClick={() => store.updateTrack(track.id, { duck: !track.duck })}
-                    title="Duck other tracks while this one plays">D</button>
+                    title="Duck other tracks while this one plays"
+                    aria-label={`${track.duck ? 'Stop ducking' : 'Duck'} other tracks while ${track.name} plays`}
+                    aria-pressed={!!track.duck}>D</button>
                 )}
                 {(track.type === 'audio' || track.type === 'voiceover') && (
                   <input type="range" min="0" max="1" step="0.05" value={track.volume ?? 1}
                     onChange={e => store.updateTrack(track.id, { volume: +e.target.value })}
-                    title="Volume" style={{ width: 34 }} />
+                    title="Volume" aria-label={`${track.name} volume`} style={{ width: 34 }} />
                 )}
-                <button className={styles.iconBtn} onClick={() => store.removeTrack(track.id)} title="Delete">✕</button>
+                <button className={styles.iconBtn} onClick={() => store.removeTrack(track.id)} title="Delete"
+                  aria-label={`Delete ${track.name} track`}>✕</button>
               </div>
             </div>
           ))}
