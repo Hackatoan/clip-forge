@@ -11,6 +11,10 @@ const crypto  = require('crypto');
 const Stripe  = require('stripe');
 
 const app  = express();
+// NPMplus terminates TLS and is the sole reverse proxy in front of this
+// server (see file header) — trust its X-Forwarded-For so rate limiting
+// below keys on the real client IP instead of NPMplus's own.
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3001;
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '../data');
 const FEATURES_FILE = path.join(DATA_DIR, 'features.json');
@@ -52,6 +56,39 @@ function normalizeEmail(raw) {
   const email = String(raw || '').trim().toLowerCase();
   return EMAIL_RE.test(email) && email.length <= 254 ? email : null;
 }
+
+// ── Rate limiting for the email-only billing routes ──
+// /status and /portal answer purely on the strength of a supplied email
+// address (see src/store/proStore.js — no login by design). That's an
+// accepted tradeoff for /status ("show the Pro UI or don't"), but /portal
+// hands back a live Stripe billing-portal session for whatever email is
+// passed in, so unlimited guesses turn "knows an email" into "can open
+// someone else's billing portal." Keep it simple: a small in-memory
+// sliding-window cap per client IP on the three /api/subscribe/* routes.
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX = 10;
+const rateLimitHits = new Map(); // ip -> timestamps[]
+function rateLimit(req, res, next) {
+  const key = req.ip || 'unknown';
+  const now = Date.now();
+  const hits = (rateLimitHits.get(key) || []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+  hits.push(now);
+  rateLimitHits.set(key, hits);
+  if (hits.length > RATE_LIMIT_MAX) {
+    res.set('Retry-After', String(Math.ceil(RATE_LIMIT_WINDOW_MS / 1000)));
+    return res.status(429).json({ error: 'too many requests, slow down and try again' });
+  }
+  next();
+}
+// Bound the map so a sustained flood from many IPs can't grow it forever.
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, hits] of rateLimitHits) {
+    const fresh = hits.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+    if (fresh.length === 0) rateLimitHits.delete(key);
+    else rateLimitHits.set(key, fresh);
+  }
+}, RATE_LIMIT_WINDOW_MS).unref();
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 function loadJson(file, fallback) {
@@ -130,7 +167,7 @@ async function applySubscription(subscriptionId, email) {
   saveSubscribers(subscribers);
 }
 
-app.post('/api/subscribe/checkout', async (req, res) => {
+app.post('/api/subscribe/checkout', rateLimit, async (req, res) => {
   if (!stripe) return res.status(503).json({ error: 'not configured' });
   const email = normalizeEmail(req.body?.email);
   const plan = req.body?.plan === 'yearly' ? 'yearly' : req.body?.plan === 'monthly' ? 'monthly' : null;
@@ -151,7 +188,7 @@ app.post('/api/subscribe/checkout', async (req, res) => {
   res.json({ url: session.url });
 });
 
-app.get('/api/subscribe/status', (req, res) => {
+app.get('/api/subscribe/status', rateLimit, (req, res) => {
   const email = normalizeEmail(req.query.email);
   if (!email) return res.status(400).json({ error: 'valid email required' });
   const sub = loadSubscribers()[email];
@@ -159,7 +196,7 @@ app.get('/api/subscribe/status', (req, res) => {
   res.json({ active: sub.status === 'active', plan: sub.plan || null, until: sub.currentPeriodEnd || null });
 });
 
-app.post('/api/subscribe/portal', async (req, res) => {
+app.post('/api/subscribe/portal', rateLimit, async (req, res) => {
   if (!stripe) return res.status(503).json({ error: 'not configured' });
   const email = normalizeEmail(req.body?.email);
   if (!email) return res.status(400).json({ error: 'valid email required' });
