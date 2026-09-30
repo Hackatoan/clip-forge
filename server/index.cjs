@@ -11,6 +11,7 @@ const crypto  = require('crypto');
 const Stripe  = require('stripe');
 const { initializeApp, cert } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
+const { callGeminiForEdit } = require('./aiEdit.cjs');
 
 const app  = express();
 // NPMplus terminates TLS and is the sole reverse proxy in front of this
@@ -24,6 +25,9 @@ const SUBSCRIBERS_FILE = path.join(DATA_DIR, 'subscribers.json');
 
 const ADMIN_TOKEN = process.env.FEATURE_ADMIN_TOKEN || '';
 if (!ADMIN_TOKEN) console.warn('[clip-forge-api] FEATURE_ADMIN_TOKEN not set — PATCH /api/features/:id is disabled.');
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+if (!GEMINI_API_KEY) console.warn('[clip-forge-api] GEMINI_API_KEY not set — /api/ai/edit is disabled.');
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
@@ -114,6 +118,33 @@ setInterval(() => {
     else rateLimitHits.set(key, fresh);
   }
 }, RATE_LIMIT_WINDOW_MS).unref();
+
+// AI edit requests actually cost money per call (unlike the billing routes
+// above) -- a much tighter per-IP cap, on top of it already being gated
+// behind an active Pro subscription.
+const AI_RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const AI_RATE_LIMIT_MAX = 5;
+const aiRateLimitHits = new Map();
+function aiRateLimit(req, res, next) {
+  const key = req.ip || 'unknown';
+  const now = Date.now();
+  const hits = (aiRateLimitHits.get(key) || []).filter((t) => now - t < AI_RATE_LIMIT_WINDOW_MS);
+  hits.push(now);
+  aiRateLimitHits.set(key, hits);
+  if (hits.length > AI_RATE_LIMIT_MAX) {
+    res.set('Retry-After', String(Math.ceil(AI_RATE_LIMIT_WINDOW_MS / 1000)));
+    return res.status(429).json({ error: 'too many AI requests, slow down and try again' });
+  }
+  next();
+}
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, hits] of aiRateLimitHits) {
+    const fresh = hits.filter((t) => now - t < AI_RATE_LIMIT_WINDOW_MS);
+    if (fresh.length === 0) aiRateLimitHits.delete(key);
+    else aiRateLimitHits.set(key, fresh);
+  }
+}, AI_RATE_LIMIT_WINDOW_MS).unref();
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 function loadJson(file, fallback) {
@@ -228,6 +259,36 @@ app.post('/api/subscribe/portal', rateLimit, requireAuth, async (req, res) => {
     return_url: `${SITE_URL}/#editor`,
   });
   res.json({ url: portal.url });
+});
+
+// ── AI-assisted editing (Pro only) ──
+
+const MAX_PROMPT_LEN = 2000;
+const MAX_TRACKS = 40;
+const MAX_CLIPS = 300;
+
+app.post('/api/ai/edit', aiRateLimit, requireAuth, async (req, res) => {
+  if (!GEMINI_API_KEY) return res.status(503).json({ error: 'not configured' });
+  const sub = loadSubscribers()[req.email];
+  if (!sub || sub.status !== 'active') return res.status(403).json({ error: 'Pro subscription required' });
+
+  const prompt = String(req.body?.prompt || '').trim();
+  if (!prompt) return res.status(400).json({ error: 'prompt required' });
+  if (prompt.length > MAX_PROMPT_LEN) return res.status(400).json({ error: 'prompt too long' });
+
+  const timeline = req.body?.timeline;
+  if (!timeline || !Array.isArray(timeline.tracks)) return res.status(400).json({ error: 'timeline required' });
+  if (timeline.tracks.length > MAX_TRACKS) return res.status(400).json({ error: 'timeline too large' });
+  const totalClips = timeline.tracks.reduce((n, t) => n + (Array.isArray(t.clips) ? t.clips.length : 0), 0);
+  if (totalClips > MAX_CLIPS) return res.status(400).json({ error: 'timeline too large' });
+
+  try {
+    const result = await callGeminiForEdit(GEMINI_API_KEY, prompt, timeline);
+    res.json(result);
+  } catch (err) {
+    console.error('[clip-forge-api] AI edit failed:', err.message);
+    res.status(502).json({ error: 'AI request failed, try again' });
+  }
 });
 
 // ── Feature-request board (unchanged behaviour, moved from the homelab) ──
