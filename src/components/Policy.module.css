@@ -1,0 +1,36 @@
+.page {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 28px;
+  position: sticky;
+  top: 0;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  z-index: 10;
+}
+.brand { font-weight: 800; font-size: 1.1rem; }
+.logo { margin-right: 6px; }
+.back {
+  color: var(--text-dim); text-decoration: none; font-weight: 600; font-size: .9rem;
+}
+.back:hover { color: var(--text); }
+
+.content {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+.content h1 { font-size: 2rem; font-weight: 800; margin-bottom: 4px; }
+.updated { color: var(--text-dim); font-size: .85rem; margin-bottom: 28px; }
+.content h2 { font-size: 1.05rem; font-weight: 700; margin: 26px 0 8px; color: var(--primary-glow); }
+.content p, .content li { color: var(--text-dim); line-height: 1.6; }
+.content ul { margin: 0 0 12px 1.3em; padding: 0; }
+.content a { color: var(--primary); }

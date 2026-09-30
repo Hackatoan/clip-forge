@@ -9,7 +9,8 @@ const FEATURES = [
   { icon: '🔀', title: 'Transitions & crossfades', body: 'Fade, fade-to-black/white, zoom and slides — plus true cross-clip dissolves between adjacent clips.' },
   { icon: '🔊', title: 'Real audio tools', body: 'Fades, per-clip volume, auto-ducking under voiceover, reverse, a live master meter and volume.' },
   { icon: '📤', title: 'Export up to 8K', body: 'Render to WebM or H.264 MP4 at 480p all the way to 4K and 8K — bitrate scales with resolution.' },
-  { icon: '🔒', title: 'No upload, no account', body: 'Everything runs in your browser. Your footage never leaves your machine. Projects save as a single file.' },
+  { icon: '🔒', title: 'No upload, no account', body: 'The full manual editor runs entirely in your browser. Your footage never leaves your machine. Projects save as a single file.' },
+  { icon: '🤖', title: 'Optional AI Editor (Pro)', body: 'Describe an edit in plain English and it drafts the cuts, color, and transitions for you to refine with the same tools. Sign-in and a subscription required — the manual editor above needs neither.' },
 ];
 
 export default function Landing({ onLaunch }) {
@@ -21,13 +22,13 @@ export default function Landing({ onLaunch }) {
       </header>
 
       <section className={styles.hero}>
-        <div className={styles.badge}>{t('Browser-based · No AI · No install · Free')}</div>
+        <div className={styles.badge}>{t('Browser-based · No install · Free')}</div>
         <h1 className={styles.title}>{t('Clip Forge — the full-featured video editor that runs in your browser.')}</h1>
         <p className={styles.sub}>
           {t('Multi-track editing, keyframe animation, GPU green-screen, and up-to-8K export — all client-side. No uploads, no account, nothing to install.')}
         </p>
         <p className={styles.sub}>
-          {t("It's a hands-on editor you drive yourself — not an AI generator. You make the cuts, keyframes and color; there's no “describe your video” prompt.")}
+          {t("It's a hands-on editor you drive yourself — every manual tool needs no account or upload. Prefer to describe an edit instead? The optional AI Editor (Pro, sign-in required) can draft cuts, color, and transitions for you to refine.")}
         </p>
         <div className={styles.ctaRow}>
           <button className={styles.cta} onClick={onLaunch}>{t('🎬 Launch Clip Forge')}</button>
@@ -72,6 +73,9 @@ export default function Landing({ onLaunch }) {
         <span>
           <a href="https://github.com/Hackatoan/clip-forge" target="_blank" rel="noreferrer">GitHub</a>
           <a href="https://github.com/Hackatoan/clip-forge/issues/new" target="_blank" rel="noreferrer">{t('Report an issue')}</a>
+          {' · '}
+          <a href="#privacy">{t('Privacy')}</a>
+          <a href="#terms">{t('Terms')}</a>
           {' · '}
           <a href="https://buymeacoffee.com/hackatoa" target="_blank" rel="noreferrer">☕ {t('Buy me a coffee')}</a>
         </span>
