@@ -37,7 +37,14 @@ if (!stripe) console.warn('[clip-forge-api] STRIPE_SECRET_KEY not set — /api/s
 const FIREBASE_SERVICE_ACCOUNT = process.env.FIREBASE_SERVICE_ACCOUNT || '';
 let firebaseAuth = null;
 if (FIREBASE_SERVICE_ACCOUNT) {
-  const app = initializeApp({ credential: cert(JSON.parse(FIREBASE_SERVICE_ACCOUNT)) });
+  const serviceAccount = JSON.parse(FIREBASE_SERVICE_ACCOUNT);
+  // The env file stores this as one JSON line; some paths between "where the
+  // key was minified" and "how systemd's EnvironmentFile hands it to the
+  // process" collapse the private_key's escaped \n sequences to literal
+  // backslash-n instead of real newlines, which OpenSSL's PEM decoder
+  // rejects outright. Safe either way: a real newline survives this untouched.
+  serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+  const app = initializeApp({ credential: cert(serviceAccount) });
   firebaseAuth = getAuth(app);
 } else {
   console.warn('[clip-forge-api] FIREBASE_SERVICE_ACCOUNT not set — /api/subscribe/* is disabled.');
