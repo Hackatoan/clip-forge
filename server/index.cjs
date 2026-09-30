@@ -9,6 +9,8 @@ const fs      = require('fs');
 const https   = require('https');
 const crypto  = require('crypto');
 const Stripe  = require('stripe');
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
 
 const app  = express();
 // NPMplus terminates TLS and is the sole reverse proxy in front of this
@@ -27,6 +29,32 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY) : null;
 if (!stripe) console.warn('[clip-forge-api] STRIPE_SECRET_KEY not set — /api/subscribe/* is disabled.');
+
+// Verifies the signed-in user for /api/subscribe/*, so status/portal answer
+// for whoever actually owns that Google account instead of trusting a
+// client-supplied email string (the previous design's accepted tradeoff —
+// see git history — is closed now that real accounts exist).
+const FIREBASE_SERVICE_ACCOUNT = process.env.FIREBASE_SERVICE_ACCOUNT || '';
+let firebaseAuth = null;
+if (FIREBASE_SERVICE_ACCOUNT) {
+  const app = initializeApp({ credential: cert(JSON.parse(FIREBASE_SERVICE_ACCOUNT)) });
+  firebaseAuth = getAuth(app);
+} else {
+  console.warn('[clip-forge-api] FIREBASE_SERVICE_ACCOUNT not set — /api/subscribe/* is disabled.');
+}
+async function requireAuth(req, res, next) {
+  const header = req.get('authorization') || '';
+  const idToken = header.replace(/^Bearer\s+/i, '').trim();
+  if (!firebaseAuth || !idToken) return res.status(401).json({ error: 'sign in required' });
+  try {
+    const decoded = await firebaseAuth.verifyIdToken(idToken);
+    if (!decoded.email || !decoded.email_verified) return res.status(401).json({ error: 'sign in required' });
+    req.email = decoded.email.toLowerCase();
+    next();
+  } catch (err) {
+    res.status(401).json({ error: 'sign in required' });
+  }
+}
 
 // Created once via the Stripe API (see repo README/memory) — same live
 // account as Nucleus, its own Product/Price so it's a separate line item.
@@ -51,20 +79,10 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-const EMAIL_RE = /^[^\s@/]+@[^\s@/]+\.[^\s@/]+$/;
-function normalizeEmail(raw) {
-  const email = String(raw || '').trim().toLowerCase();
-  return EMAIL_RE.test(email) && email.length <= 254 ? email : null;
-}
-
-// ── Rate limiting for the email-only billing routes ──
-// /status and /portal answer purely on the strength of a supplied email
-// address (see src/store/proStore.js — no login by design). That's an
-// accepted tradeoff for /status ("show the Pro UI or don't"), but /portal
-// hands back a live Stripe billing-portal session for whatever email is
-// passed in, so unlimited guesses turn "knows an email" into "can open
-// someone else's billing portal." Keep it simple: a small in-memory
-// sliding-window cap per client IP on the three /api/subscribe/* routes.
+// ── Rate limiting for the billing routes ──
+// requireAuth already ensures each request is for the signed-in caller's own
+// account, but keep a small in-memory sliding-window cap per client IP too —
+// plain abuse/cost protection on routes that call Stripe.
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX = 10;
 const rateLimitHits = new Map(); // ip -> timestamps[]
@@ -167,11 +185,10 @@ async function applySubscription(subscriptionId, email) {
   saveSubscribers(subscribers);
 }
 
-app.post('/api/subscribe/checkout', rateLimit, async (req, res) => {
+app.post('/api/subscribe/checkout', rateLimit, requireAuth, async (req, res) => {
   if (!stripe) return res.status(503).json({ error: 'not configured' });
-  const email = normalizeEmail(req.body?.email);
+  const email = req.email;
   const plan = req.body?.plan === 'yearly' ? 'yearly' : req.body?.plan === 'monthly' ? 'monthly' : null;
-  if (!email) return res.status(400).json({ error: 'valid email required' });
   if (!plan) return res.status(400).json({ error: 'plan must be monthly or yearly' });
 
   const session = await stripe.checkout.sessions.create({
@@ -188,19 +205,15 @@ app.post('/api/subscribe/checkout', rateLimit, async (req, res) => {
   res.json({ url: session.url });
 });
 
-app.get('/api/subscribe/status', rateLimit, (req, res) => {
-  const email = normalizeEmail(req.query.email);
-  if (!email) return res.status(400).json({ error: 'valid email required' });
-  const sub = loadSubscribers()[email];
+app.get('/api/subscribe/status', rateLimit, requireAuth, (req, res) => {
+  const sub = loadSubscribers()[req.email];
   if (!sub) return res.json({ active: false });
   res.json({ active: sub.status === 'active', plan: sub.plan || null, until: sub.currentPeriodEnd || null });
 });
 
-app.post('/api/subscribe/portal', rateLimit, async (req, res) => {
+app.post('/api/subscribe/portal', rateLimit, requireAuth, async (req, res) => {
   if (!stripe) return res.status(503).json({ error: 'not configured' });
-  const email = normalizeEmail(req.body?.email);
-  if (!email) return res.status(400).json({ error: 'valid email required' });
-  const customerId = loadSubscribers()[email]?.stripeCustomerId;
+  const customerId = loadSubscribers()[req.email]?.stripeCustomerId;
   if (!customerId) return res.status(404).json({ error: 'no subscription found for that email' });
 
   const portal = await stripe.billingPortal.sessions.create({
