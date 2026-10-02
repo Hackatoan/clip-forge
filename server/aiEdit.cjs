@@ -169,26 +169,33 @@ async function callGeminiForEdit(apiKey, prompt, timeline) {
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         tools: TOOLS,
     };
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-        body: JSON.stringify(body),
-    });
-    if (!r.ok) {
-        const text = await r.text().catch(() => '');
-        throw new Error(`Gemini ${r.status}: ${text.slice(0, 500)}`);
-    }
-    const data = await r.json();
-    const parts = data.candidates?.[0]?.content?.parts || [];
-    const actions = [];
-    let message = '';
-    for (const part of parts) {
-        if (part.functionCall && buildRequiredArgs(part.functionCall.name, part.functionCall.args || {})) {
-            actions.push({ name: part.functionCall.name, args: part.functionCall.args || {} });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    try {
+        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+            body: JSON.stringify(body),
+            signal: controller.signal,
+        });
+        if (!r.ok) {
+            const text = await r.text().catch(() => '');
+            throw new Error(`Gemini ${r.status}: ${text.slice(0, 500)}`);
         }
-        if (part.text) message += part.text;
+        const data = await r.json();
+        const parts = data.candidates?.[0]?.content?.parts || [];
+        const actions = [];
+        let message = '';
+        for (const part of parts) {
+            if (part.functionCall && buildRequiredArgs(part.functionCall.name, part.functionCall.args || {})) {
+                actions.push({ name: part.functionCall.name, args: part.functionCall.args || {} });
+            }
+            if (part.text) message += part.text;
+        }
+        return { actions, message: message.trim() };
+    } finally {
+        clearTimeout(timeoutId);
     }
-    return { actions, message: message.trim() };
 }
 
 module.exports = { callGeminiForEdit };
