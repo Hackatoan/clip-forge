@@ -15,6 +15,7 @@ export default function Privacy({ onHome, onTerms }) {
 
         <h2>The editor itself: nothing collected</h2>
         <p>Trimming, keyframes, color, export — all of it runs entirely in your browser. Your video, audio, and image files never leave your machine, never get uploaded anywhere, and we never see them. No account is needed for any of this.</p>
+        <p><strong>One optional exception:</strong> the “Mosaic” tool in the Media panel, only after you tick its consent box and press the button, sends the current frame and a few stills sampled from your clips to our Mosaic service (mosaic.hackatoa.com) to build the picture. They are processed in memory and not stored. Nothing is sent unless you do this.</p>
 
         <h2>If you sign in with Google (for Clip Forge Pro)</h2>
         <p>Signing in is only needed to subscribe to or manage Clip Forge Pro. If you do, we receive your email address, display name, and a Google account ID (via Firebase Authentication). We never see or store your Google password.</p>

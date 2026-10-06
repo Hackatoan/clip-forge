@@ -4,6 +4,7 @@ import { useStore } from '../hooks/useStore';
 import { serializeProject, downloadProject, parseProject } from '../engine/project';
 import { importFiles } from '../engine/importMedia';
 import { captureFrame } from '../engine/render';
+import MosaicTool from './MosaicTool';
 import styles from './Panel.module.css';
 
 export default function MediaPanel() {
@@ -109,6 +110,8 @@ export default function MediaPanel() {
           <button className={styles.elemBtn} onClick={freezeFrame} title="Add a still of the current frame">❄ Freeze frame</button>
         </div>
       </div>
+
+      <MosaicTool />
 
       <div className={styles.section}>
         <div className={styles.sectionTitle}>Project</div>
