@@ -145,7 +145,8 @@ function drawMedia(ctx, el, W, H, clip, ts, lt) {
   const fx = Math.cos((sample(clip, 'flipX', lt, clip.flipX ?? 0) * Math.PI) / 180) * (clip.flipH ? -1 : 1);
   const fy = Math.cos((sample(clip, 'flipY', lt, clip.flipY ?? 0) * Math.PI) / 180) * (clip.flipV ? -1 : 1);
 
-  ctx.filter = filterString(clip);
+  const filter = filterString(clip);
+  ctx.filter = filter;
   ctx.translate(cx, cy);
   if (rot) ctx.rotate(rot);
   if (fx !== 1 || fy !== 1) ctx.scale(fx, fy);
@@ -157,7 +158,7 @@ function drawMedia(ctx, el, W, H, clip, ts, lt) {
   if (clip.sharpen) {
     ensureSharpenDef();
     const baseAlpha = ctx.globalAlpha;
-    ctx.filter = `${filterString(clip)} url(#cfSharpenKernel)`;
+    ctx.filter = `${filter} url(#cfSharpenKernel)`;
     ctx.globalAlpha = baseAlpha * Math.min(1, clip.sharpen);
     try { ctx.drawImage(src, -dw / 2, -dh / 2, dw, dh); } catch { /* frame not ready */ }
     ctx.globalAlpha = baseAlpha;

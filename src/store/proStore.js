@@ -24,8 +24,8 @@ function save() {
   // is the source of truth on reload; only cache the last-known plan info
   // so the UI doesn't flash "not subscribed" for a frame before refreshStatus() lands.
   try {
-    const { user, ...rest } = state;
-    localStorage.setItem(KEY, JSON.stringify(rest));
+    const stateToSave = Object.fromEntries(Object.entries(state).filter(([key]) => key !== 'user'));
+    localStorage.setItem(KEY, JSON.stringify(stateToSave));
   } catch { /* private mode */ }
 }
 
