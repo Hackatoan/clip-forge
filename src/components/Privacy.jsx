@@ -45,7 +45,7 @@ export default function Privacy({ onHome, onTerms }) {
         <ul>
           <li>Use the full manual editor without ever signing in or providing any information.</li>
           <li>Cancel your Pro subscription anytime via the self-service Stripe portal.</li>
-          <li>Email <a href="mailto:preston@hackatoa.com">preston@hackatoa.com</a> to have your account data deleted.</li>
+          <li>Email <a href="mailto:server@hackatoa.com">server@hackatoa.com</a> to have your account data deleted.</li>
         </ul>
 
         <h2>Children's privacy</h2>
@@ -55,7 +55,7 @@ export default function Privacy({ onHome, onTerms }) {
         <p>If this policy changes in a meaningful way, we'll update the date above.</p>
 
         <p>See also our <a href="#" onClick={(e) => { e.preventDefault(); onTerms(); }}>Terms of Service</a>.</p>
-        <p>Questions? <a href="mailto:preston@hackatoa.com">preston@hackatoa.com</a></p>
+        <p>Questions? <a href="mailto:server@hackatoa.com">server@hackatoa.com</a></p>
       </main>
     </div>
   );

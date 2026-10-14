@@ -24,7 +24,7 @@ export default function Terms({ onHome, onPrivacy }) {
         </ul>
 
         <p>See also our <a href="#" onClick={(e) => { e.preventDefault(); onPrivacy(); }}>Privacy Policy</a>.</p>
-        <p>Questions? <a href="mailto:preston@hackatoa.com">preston@hackatoa.com</a></p>
+        <p>Questions? <a href="mailto:server@hackatoa.com">server@hackatoa.com</a></p>
       </main>
     </div>
   );
