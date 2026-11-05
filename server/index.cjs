@@ -293,6 +293,11 @@ app.post('/api/ai/edit', aiRateLimit, requireAuth, async (req, res) => {
 
 // ── Feature-request board (unchanged behaviour, moved from the homelab) ──
 
+const MAX_TITLE_LEN = 500;
+const MAX_DESCRIPTION_LEN = 5000;
+const MAX_EMAIL_LEN = 254;
+const MAX_RESPONSE_LEN = 5000;
+
 app.get('/api/features', (req, res) => {
   res.json(loadFeatures().map(({ email, ...rest }) => rest));
 });
@@ -300,13 +305,15 @@ app.get('/api/features', (req, res) => {
 app.post('/api/features', (req, res) => {
   const { title, description, email } = req.body;
   if (!title?.trim()) return res.status(400).json({ error: 'title required' });
+  if (title.length > MAX_TITLE_LEN) return res.status(400).json({ error: 'title too long' });
+  if (description && description.length > MAX_DESCRIPTION_LEN) return res.status(400).json({ error: 'description too long' });
 
   const features = loadFeatures();
   const feature = {
     id: Date.now(),
     title: title.trim(),
     description: description?.trim() || '',
-    email: (email || '').trim().slice(0, 254),
+    email: (email || '').trim().slice(0, MAX_EMAIL_LEN),
     status: 'pending',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -322,6 +329,9 @@ app.patch('/api/features/:id', requireAdmin, (req, res) => {
   const { status, response } = req.body;
   if (status !== undefined && !['pending', 'working', 'done', 'wontfix'].includes(status)) {
     return res.status(400).json({ error: 'invalid status' });
+  }
+  if (response !== undefined && String(response).length > MAX_RESPONSE_LEN) {
+    return res.status(400).json({ error: 'response too long' });
   }
   const features = loadFeatures();
   const f = features.find(x => String(x.id) === req.params.id);
