@@ -5,11 +5,12 @@
 // through the same store functions manual editing uses, so undo/redo and
 // every existing invariant just work for free.
 //
-// Preset enums (FILTER_PRESETS/GRADE_PRESETS names) mirror
+// Preset enums (FILTER_PRESETS/GRADE_PRESETS/FOG_PRESETS names) mirror
 // src/engine/presets.js exactly -- keep both in sync if either changes.
 
 const FILTER_PRESET_NAMES = ['None', 'B&W', 'Vintage', 'Warm', 'Cool', 'Vivid'];
 const GRADE_PRESET_NAMES = ['None', 'Teal & Orange', 'Cinematic', 'Warm film', 'Cold', 'Moody'];
+const FOG_PRESET_NAMES = ['None', 'Mist', 'Ground fog', 'Thick fog', 'Smoke', 'Haunted'];
 const TRANSITION_TYPES = ['none', 'fade', 'fade-black', 'fade-white', 'slide-left', 'slide-right', 'slide-up', 'slide-down', 'zoom-in', 'zoom-out'];
 
 // gemini-flash-lite-latest: matches the quota-safe model this account
@@ -78,6 +79,15 @@ const TOOLS = [{
             parameters: {
                 type: 'OBJECT',
                 properties: { clip_id: { type: 'STRING' }, preset: { type: 'STRING', enum: GRADE_PRESET_NAMES } },
+                required: ['clip_id', 'preset'],
+            },
+        },
+        {
+            name: 'apply_fog',
+            description: 'Add a drifting atmospheric fog/mist/smoke overlay preset to a video or image clip ("None" removes it).',
+            parameters: {
+                type: 'OBJECT',
+                properties: { clip_id: { type: 'STRING' }, preset: { type: 'STRING', enum: FOG_PRESET_NAMES } },
                 required: ['clip_id', 'preset'],
             },
         },

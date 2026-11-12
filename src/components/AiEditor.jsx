@@ -4,7 +4,7 @@ import { useProStore } from '../hooks/useProStore';
 import { store } from '../store/editorStore';
 import { getIdToken } from '../firebase';
 import { API_BASE } from '../apiBase';
-import { FILTER_PRESETS, GRADE_PRESETS } from '../engine/presets';
+import { FILTER_PRESETS, GRADE_PRESETS, FOG_PRESETS } from '../engine/presets';
 import styles from './Panel.module.css';
 
 // Maps a tool call name (see server/aiEdit.cjs -- keep both in sync) to the
@@ -23,6 +23,7 @@ const ACTION_HANDLERS = {
   set_speed: (a) => store.updateClip(a.clip_id, { speed: a.speed }),
   apply_filter_preset: (a) => store.updateClip(a.clip_id, FILTER_PRESETS[a.preset] || {}),
   apply_color_grade: (a) => store.updateClip(a.clip_id, GRADE_PRESETS[a.preset] || {}),
+  apply_fog: (a) => store.updateClip(a.clip_id, FOG_PRESETS[a.preset] || {}),
   set_transition: (a) => store.updateClip(a.clip_id, a.edge === 'in'
     ? { transitionIn: a.type, transInDur: a.duration ?? 0.5 }
     : { transitionOut: a.type, transOutDur: a.duration ?? 0.5 }),
@@ -40,6 +41,7 @@ const ACTION_LABELS = {
   set_speed: 'Changed clip speed',
   apply_filter_preset: (a) => `Applied "${a.preset}" filter`,
   apply_color_grade: (a) => `Applied "${a.preset}" color grade`,
+  apply_fog: (a) => `Applied "${a.preset}" fog`,
   set_transition: (a) => `Set a ${a.type} transition`,
   crossfade_with_previous: 'Added a crossfade',
   ken_burns: 'Added a Ken Burns effect',

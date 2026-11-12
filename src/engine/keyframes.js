@@ -5,7 +5,7 @@
 // flipX / flipY are flip-animation angles in degrees (0 = normal, 90 = edge-on,
 // 180 = fully flipped/mirrored). Keyframing them animates a card-flip whose speed
 // is set by the keyframe spacing.
-export const ANIMATABLE = ['opacity', 'scale', 'x', 'y', 'rotation', 'flipX', 'flipY', 'volume'];
+export const ANIMATABLE = ['opacity', 'scale', 'x', 'y', 'rotation', 'flipX', 'flipY', 'fog', 'volume'];
 
 function easeFn(kind, f) {
   switch (kind) {

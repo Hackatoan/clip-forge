@@ -5,7 +5,7 @@ import { store } from '../store/editorStore';
 import { fontStore } from '../store/fontStore';
 import { hasKeyframes } from '../engine/keyframes';
 import { reverseAudio } from '../engine/audioReverse';
-import { TRANSITIONS, BLENDS, FILTER_PRESETS, GRADE_PRESETS } from '../engine/presets';
+import { TRANSITIONS, BLENDS, FILTER_PRESETS, GRADE_PRESETS, FOG_PRESETS } from '../engine/presets';
 import styles from './Panel.module.css';
 
 const SYSTEM_FONTS = ['system-ui', 'Arial', 'Georgia', 'Times New Roman', 'Courier New', 'Impact', 'Comic Sans MS', 'Trebuchet MS', 'Verdana'];
@@ -27,7 +27,7 @@ function KfRow({ clip, prop, label, localTime, inRange }) {
 }
 
 function defaultFor(prop) {
-  return ({ opacity: 1, scale: 1, x: 0.5, y: 0.5, rotation: 0, flipX: 0, flipY: 0, volume: 1 })[prop] ?? 0;
+  return ({ opacity: 1, scale: 1, x: 0.5, y: 0.5, rotation: 0, flipX: 0, flipY: 0, fog: 0, volume: 1 })[prop] ?? 0;
 }
 
 export default function PropertiesPanel() {
@@ -179,6 +179,7 @@ export default function PropertiesPanel() {
           {isVisual && <>
             <KfRow clip={clip} prop="flipX" label="Flip X" localTime={localTime} inRange={inRange} />
             <KfRow clip={clip} prop="flipY" label="Flip Y" localTime={localTime} inRange={inRange} />
+            <KfRow clip={clip} prop="fog" label="Fog" localTime={localTime} inRange={inRange} />
           </>}
           {isAudio && <KfRow clip={clip} prop="volume" label="Volume" localTime={localTime} inRange={inRange} />}
         </div>
@@ -296,6 +297,41 @@ export default function PropertiesPanel() {
             onClick={() => upd({ temp: 0, tint: 0 })}>
             Reset grade
           </button>
+        </div>
+      )}
+
+      {/* Fog (video / image) */}
+      {isVisual && (
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}>Fog</div>
+          <div className={styles.presetGrid}>
+            {Object.entries(FOG_PRESETS).map(([name, p]) => (
+              <button key={name} className={styles.chip} onClick={() => upd(p)}>{name}</button>
+            ))}
+          </div>
+          <label className={styles.field}>
+            <span>Density {Math.round((clip.fog ?? 0) * 100)}%</span>
+            <input type="range" min="0" max="1" step="0.01" value={clip.fog ?? 0}
+              onChange={e => upd({ fog: +e.target.value })} />
+          </label>
+          {(clip.fog ?? 0) > 0 && <>
+            <label className={styles.field}>
+              <span>Drift speed {Math.round((clip.fogSpeed ?? 0.25) * 100)}%</span>
+              <input type="range" min="0" max="1" step="0.01" value={clip.fogSpeed ?? 0.25}
+                onChange={e => upd({ fogSpeed: +e.target.value })} />
+            </label>
+            <label className={styles.field}>
+              <span>Ground hug {Math.round((clip.fogLow ?? 0) * 100)}%</span>
+              <input type="range" min="0" max="1" step="0.01" value={clip.fogLow ?? 0}
+                onChange={e => upd({ fogLow: +e.target.value })} />
+            </label>
+            <label className={styles.field}>
+              <span>Colour</span>
+              <input type="color" value={clip.fogColor || '#dde4ec'} style={{ height: 30, padding: 2, width: '100%' }}
+                onChange={e => upd({ fogColor: e.target.value })} />
+            </label>
+          </>}
+          <p className={styles.hint}>Keyframe Fog (Animation ◆) to roll it in or out.</p>
         </div>
       )}
 

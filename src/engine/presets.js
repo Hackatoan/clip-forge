@@ -23,3 +23,14 @@ export const GRADE_PRESETS = {
   Cold:            { temp: -40, tint: -6, contrast: 1.08, saturate: 0.9 },
   Moody:           { temp: -15, tint: 8, contrast: 1.2, saturate: 0.8, brightness: 0.95 },
 };
+
+// Atmospheric fog presets: amount (0–1, keyframable), colour, drift speed, and
+// how strongly it pools toward the bottom of the frame (0 = even haze).
+export const FOG_PRESETS = {
+  None:         { fog: 0 },
+  Mist:         { fog: 0.35, fogColor: '#dde4ec', fogSpeed: 0.2, fogLow: 0 },
+  'Ground fog': { fog: 0.7, fogColor: '#e6ebf0', fogSpeed: 0.3, fogLow: 0.85 },
+  'Thick fog':  { fog: 0.8, fogColor: '#d4d9de', fogSpeed: 0.15, fogLow: 0.2 },
+  Smoke:        { fog: 0.55, fogColor: '#7d838a', fogSpeed: 0.5, fogLow: 0.3 },
+  Haunted:      { fog: 0.6, fogColor: '#9fc4b8', fogSpeed: 0.35, fogLow: 0.6 },
+};

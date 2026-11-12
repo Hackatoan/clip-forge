@@ -164,6 +164,114 @@ function drawMedia(ctx, el, W, H, clip, ts, lt) {
     ctx.globalAlpha = baseAlpha;
   }
   ctx.filter = 'none';
+  const fog = fogged(clip, src, dw, dh, lt);
+  if (fog) ctx.drawImage(fog, -dw / 2, -dh / 2, dw, dh);
+}
+
+// Fog: a tileable fractal-noise texture, generated once, drifted across the
+// clip over time and tinted to `fogColor`. Rendered at reduced resolution
+// (fog is all low frequency, so upscaling is invisible) on an offscreen
+// canvas, then masked by the clip's own alpha so chroma-keyed / letterboxed
+// areas stay clear. Drift is a pure function of clip-local time, so preview
+// and export render identical frames.
+const FOG_TILE = 128;
+let fogNoise = null;
+function fogNoiseTile() {
+  if (fogNoise) return fogNoise;
+  // Seeded lattice so the texture is stable across reloads (deterministic export).
+  let seed = 1337;
+  const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+  const octaves = [4, 8, 16, 32];
+  const lattices = octaves.map(n => Array.from({ length: n * n }, rnd));
+  const smooth = t => t * t * (3 - 2 * t);
+  const c = document.createElement('canvas');
+  c.width = c.height = FOG_TILE;
+  const g = c.getContext('2d');
+  const img = g.createImageData(FOG_TILE, FOG_TILE);
+  for (let y = 0; y < FOG_TILE; y++) {
+    for (let x = 0; x < FOG_TILE; x++) {
+      let v = 0, amp = 0.5, norm = 0;
+      octaves.forEach((n, o) => {
+        const L = lattices[o];
+        const fx = (x / FOG_TILE) * n, fy = (y / FOG_TILE) * n;
+        const x0 = Math.floor(fx), y0 = Math.floor(fy);
+        const x1 = (x0 + 1) % n, y1 = (y0 + 1) % n; // wrap → seamless tile
+        const sx = smooth(fx - x0), sy = smooth(fy - y0);
+        const a = L[y0 * n + x0] + (L[y0 * n + x1] - L[y0 * n + x0]) * sx;
+        const b = L[y1 * n + x0] + (L[y1 * n + x1] - L[y1 * n + x0]) * sx;
+        v += (a + (b - a) * sy) * amp; norm += amp; amp *= 0.5;
+      });
+      v /= norm;
+      const i = (y * FOG_TILE + x) * 4;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = 255;
+      // Contrast-stretch so there are visible wisps and clear gaps.
+      img.data[i + 3] = Math.max(0, Math.min(255, (v - 0.3) * 2.2 * 255));
+    }
+  }
+  g.putImageData(img, 0, 0);
+  fogNoise = c;
+  return c;
+}
+
+let fogCv = null;
+function fogged(clip, src, dw, dh, lt) {
+  const amount = Math.max(0, Math.min(1, sample(clip, 'fog', lt, clip.fog ?? 0)));
+  if (!amount || typeof document === 'undefined') return null;
+  const w = Math.max(1, Math.round(Math.min(640, Math.abs(dw))));
+  const h = Math.max(1, Math.round(w * Math.abs(dh) / Math.abs(dw)));
+  if (!fogCv) fogCv = document.createElement('canvas');
+  if (fogCv.width !== w || fogCv.height !== h) { fogCv.width = w; fogCv.height = h; }
+  const g = fogCv.getContext('2d');
+  g.globalCompositeOperation = 'source-over';
+  g.globalAlpha = 1;
+  g.clearRect(0, 0, w, h);
+
+  // Even base haze (lifts blacks, lowers contrast like real fog)...
+  g.globalAlpha = 0.45;
+  g.fillStyle = '#fff';
+  g.fillRect(0, 0, w, h);
+  // ...plus two noise layers at different scales drifting at different rates
+  // (parallax) so the fog rolls rather than sliding as one flat sheet.
+  const tile = fogNoiseTile();
+  const speed = clip.fogSpeed ?? 0.25;
+  const layers = [{ scale: w / 1.6, rate: 1, alpha: 0.9 }, { scale: w / 3.2, rate: 1.7, alpha: 0.6 }];
+  for (const L of layers) {
+    const pat = g.createPattern(tile, 'repeat');
+    const k = L.scale / FOG_TILE;
+    const off = lt * speed * L.rate * w * 0.15;
+    pat.setTransform(new DOMMatrix().translateSelf(-off, off * 0.15).scaleSelf(k, k * 0.6));
+    g.globalAlpha = L.alpha;
+    g.fillStyle = pat;
+    g.fillRect(0, 0, w, h);
+  }
+
+  // Tint: keep the accumulated alpha, replace the colour.
+  g.globalAlpha = 1;
+  g.globalCompositeOperation = 'source-in';
+  g.fillStyle = clip.fogColor || '#dde4ec';
+  g.fillRect(0, 0, w, h);
+
+  // Ground fog: fade density toward the top of the frame.
+  const low = clip.fogLow ?? 0;
+  if (low > 0) {
+    const grad = g.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, `rgba(0,0,0,${1 - low})`);
+    grad.addColorStop(0.55, `rgba(0,0,0,${1 - low * 0.6})`);
+    grad.addColorStop(1, 'rgba(0,0,0,1)');
+    g.globalCompositeOperation = 'destination-in';
+    g.fillStyle = grad;
+    g.fillRect(0, 0, w, h);
+  }
+
+  // Overall density, then clip the fog to the source's own alpha.
+  g.globalCompositeOperation = 'destination-in';
+  g.globalAlpha = amount;
+  g.fillStyle = '#000';
+  g.fillRect(0, 0, w, h);
+  g.globalAlpha = 1;
+  try { g.drawImage(src, 0, 0, w, h); } catch { /* frame not ready */ }
+  g.globalCompositeOperation = 'source-over';
+  return fogCv;
 }
 
 // Colour grading: temperature (warm/cool) + tint (magenta/green) applied as an
