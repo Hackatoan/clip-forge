@@ -33,21 +33,30 @@ export default function Timeline() {
   const toX = t => t * zoom;
   const toT = x => x / zoom;
 
-  // Collect snap targets (other clip edges + playhead + 0).
-  const snapPoints = (excludeId) => {
-    const pts = [0, playhead];
-    for (const tr of tracks) for (const c of tr.clips) {
-      if (c.id === excludeId) continue;
-      pts.push(c.start, c.start + c.duration);
+  // Collect snap targets (other clip edges + playhead + 0). Memoized to avoid
+  // recalculating on every pixel of dragging.
+  const snapPointsCache = useRef(null);
+  const snapPointsCacheKey = useRef(null);
+  const getSnapPoints = (excludeId) => {
+    // Cache key: stringify track clip positions to detect changes
+    const key = JSON.stringify(tracks.map(t => t.clips.map(c => [c.id, c.start, c.duration])));
+    if (snapPointsCacheKey.current !== key) {
+      const pts = [0, playhead];
+      for (const tr of tracks) for (const c of tr.clips) {
+        if (c.id === excludeId) continue;
+        pts.push(c.start, c.start + c.duration);
+      }
+      snapPointsCache.current = pts;
+      snapPointsCacheKey.current = key;
     }
-    return pts;
+    return snapPointsCache.current;
   };
   // Snap `t` to nearby edges unless snapping is off or Alt is held.
   const snap = (t, excludeId, bypass) => {
     if (!snapOn || bypass) return t;
     const threshold = 8 / zoom; // ~8px
     let best = t, bestD = threshold;
-    for (const p of snapPoints(excludeId)) {
+    for (const p of getSnapPoints(excludeId)) {
       const d = Math.abs(p - t);
       if (d < bestD) { best = p; bestD = d; }
     }
