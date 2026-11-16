@@ -8,6 +8,7 @@ const GROUPS = [
       ['← / →', 'Step 0.1s (Shift = 1s)'],
       [', / .', 'Step 1 frame back / forward'],
       ['Home / End', 'Jump to start / end'],
+      ['[ / ]', 'Jump to previous / next marker or clip edge'],
       ['Drag ruler / playhead', 'Scrub'],
     ],
   },
