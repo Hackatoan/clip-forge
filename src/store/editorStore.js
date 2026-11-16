@@ -360,6 +360,17 @@ function createStore() {
     },
     removeMarker(id) { setState({ markers: state.markers.filter(m => m.id !== id) }); },
 
+    // Jump the playhead to the previous (dir < 0) or next (dir > 0) edit point:
+    // any marker, clip start/end, or the timeline start/end.
+    jumpToEditPoint(dir) {
+      const pts = [0, state.duration, ...state.markers.map(m => m.t)];
+      state.tracks.forEach(tr => tr.clips.forEach(c => pts.push(c.start, c.start + c.duration)));
+      const eps = 1e-3, at = state.playhead;
+      const cands = pts.filter(t => (dir < 0 ? t < at - eps : t > at + eps));
+      if (!cands.length) return;
+      setState({ playhead: Math.max(0, Math.min(dir < 0 ? Math.max(...cands) : Math.min(...cands), state.duration)) });
+    },
+
     // Project notes (Notes tab)
     setNotes(v) { setState({ notes: v }); },
 

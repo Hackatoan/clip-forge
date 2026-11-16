@@ -106,6 +106,8 @@ export default function Editor({ onHome }) {
         e.preventDefault(); store.setPlayhead(0);
       } else if (e.key === 'End') {
         e.preventDefault(); store.setPlayhead(s.duration);
+      } else if (!mod && (e.key === '[' || e.key === ']')) {
+        e.preventDefault(); store.jumpToEditPoint(e.key === '[' ? -1 : 1);
       } else if (e.key === 'm' || e.key === 'M') {
         e.preventDefault(); store.addMarker();
       } else if (e.key === '?') {
