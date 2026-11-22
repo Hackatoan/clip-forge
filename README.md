@@ -13,6 +13,7 @@ Clip Forge is a client-side, multi-track video editor. Everything is processed l
 - Multi-track timeline (video / audio / image / text / shape / voiceover)
 - Trim, split, snap, copy/paste, undo/redo, multi-select
 - Timeline markers + `[` / `]` to jump between markers and clip edges
+- Right-click the preview to save the current frame as a full-resolution PNG
 - Keyframes, transitions & crossfades, filters, color grading, chroma key
 - Save/load projects as a single `.clipforge` file
 - WebM export + optional FFmpeg.wasm MP4 transcode (up to 8K)
