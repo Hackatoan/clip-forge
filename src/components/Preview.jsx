@@ -98,6 +98,13 @@ export default function Preview() {
         const tid = store.addTrack('image');
         store.addClip(tid, { src: url, name: 'Freeze frame', duration: 2, start: s.playhead, fit: 'cover' });
       } },
+      { label: 'Save frame as PNG', disabled: empty, onClick: () => {
+        // Full-resolution still of the current frame (canvas size, not the on-screen preview size).
+        const a = document.createElement('a');
+        a.href = captureFrame(s.tracks, s.canvasW, s.canvasH, s.playhead);
+        a.download = `clip-forge-frame-${fmt(s.playhead).replace(/[:.]/g, '-')}.png`;
+        a.click();
+      } },
       { divider: true },
       { label: 'Jump to start', shortcut: 'Home', onClick: () => store.setPlayhead(0) },
       { label: 'Jump to end', shortcut: 'End', onClick: () => store.setPlayhead(s.duration) },
